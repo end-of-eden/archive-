@@ -538,10 +538,28 @@
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
   .toast.error{ border-color:var(--accent-2); color:var(--accent-2); }
 
+  .cursor-heart{
+    position:fixed;
+    pointer-events:none;
+    font-size:13px;
+    z-index:9999;
+    left:0; top:0;
+    transform:translate(-50%,-50%);
+    animation:cursor-heart-float 900ms ease-out forwards;
+    will-change:transform, opacity;
+  }
+  @keyframes cursor-heart-float{
+    0%{ transform:translate(-50%,-50%) scale(0.6); opacity:0.9; }
+    100%{ transform:translate(-50%,-160%) scale(1.05); opacity:0; }
+  }
+
   @media (prefers-reduced-motion: reduce){
     *{ transition:none !important; }
   }
 </style>
+<!-- Red Spinning Heart Within A Heart - https://www.cursors-4u.com/cursor/red-spinning-heart-within-a-heart -->
+<link rel="stylesheet" href="https://cdn.cursors-4u.net/cursors/animated/red-spinning-heart-within-a-heart-403d06ac-32.css">
+<!-- End www.Cursors-4U.com Code -->
 </head>
 <body>
 
@@ -1227,6 +1245,28 @@ document.getElementById('gallery').addEventListener('click', (ev)=>{
 });
 
 loadEntries();
+
+/* ---------------- cursor heart trail ---------------- */
+if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+  const HEART_COLORS = ['#A6332B', '#C9A227'];
+  const SPAWN_INTERVAL_MS = 90; // lower = more frequent hearts
+  let lastHeartSpawn = 0;
+
+  document.addEventListener('mousemove', (ev)=>{
+    const now = Date.now();
+    if(now - lastHeartSpawn < SPAWN_INTERVAL_MS) return;
+    lastHeartSpawn = now;
+
+    const heart = document.createElement('span');
+    heart.className = 'cursor-heart';
+    heart.textContent = '♥';
+    heart.style.left = (ev.clientX + (Math.random()*10 - 5)) + 'px';
+    heart.style.top = (ev.clientY + (Math.random()*10 - 5)) + 'px';
+    heart.style.color = HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)];
+    document.body.appendChild(heart);
+    setTimeout(()=> heart.remove(), 900);
+  });
+}
 </script>
 </body>
 </html>
