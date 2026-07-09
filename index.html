@@ -801,9 +801,9 @@ function fieldWithCopy(label, str, extraClass){
 
 function cardHtml(e){
   const tags = (e.tags||[]).map(t=>`<span class="mini-chip">${escapeHtml(t)}</span>`).join('');
-  const characters = (e.characters||[]).map(c =>
-    `<p class="field-value">${escapeHtml(c.name || '')}${c.outfit ? ` — ${escapeHtml(c.outfit)}` : ''}</p>`
-  ).join('');
+  const characters = (e.characters||[])
+    .map(c => fieldWithCopy((c.name || '').toLowerCase(), c.outfit))
+    .join('');
   const cx = e.cropX != null ? e.cropX : 50;
   const cy = e.cropY != null ? e.cropY : 50;
   return `
@@ -823,7 +823,7 @@ function cardHtml(e){
     <div class="card-meta">
       ${fieldWithCopy('artist tags', e.artists, 'muted')}
       ${fieldWithCopy('prompt', e.prompt)}
-      ${characters ? `<div><p class="field-label">characters</p>${characters}</div>` : ''}
+      ${characters}
       ${fieldWithCopy('negative', e.negative, 'muted')}
       ${e.params ? `<div><p class="field-label">${e.type === 'style' ? 'settings' : 'note'}</p><p class="field-value muted">${escapeHtml(e.params)}</p></div>` : ''}
       ${tags ? `<div class="chips">${tags}</div>` : ''}
