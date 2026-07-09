@@ -156,11 +156,10 @@
   }
   .gallery{
     display:grid;
-    grid-template-columns:repeat(4, 1fr);
+    grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
     gap:18px;
   }
-  @media (max-width:960px){ .gallery{ grid-template-columns:repeat(2, 1fr); } }
-  @media (max-width:560px){ .gallery{ grid-template-columns:1fr; } .controls, main, header.hero{ padding-left:18px; padding-right:18px; } }
+  @media (max-width:560px){ .controls, main, header.hero{ padding-left:18px; padding-right:18px; } }
 
   .card{
     background:var(--surface);
@@ -174,7 +173,7 @@
   .card:hover{ border-color:var(--accent-soft); transform:translateY(-2px); }
   .card-image-wrap{
     position:relative;
-    aspect-ratio:3/4;
+    aspect-ratio:1/1;
     background:var(--surface-2);
     overflow:hidden;
   }
@@ -382,6 +381,31 @@
   .hint{ font-size:11.5px; color:var(--text-faint); margin-top:6px; line-height:1.5; }
   .type-group.hidden{ display:none; }
   .optional-hint{ text-transform:none; letter-spacing:0; color:var(--text-faint); font-size:11px; }
+  .crop-preview{
+    position:relative;
+    width:180px;
+    height:180px;
+    border-radius:8px;
+    overflow:hidden;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    cursor:crosshair;
+    touch-action:none;
+    user-select:none;
+  }
+  .crop-preview img{
+    width:100%; height:100%; object-fit:cover; display:block; pointer-events:none;
+  }
+  .crop-crosshair{
+    position:absolute;
+    width:16px; height:16px;
+    border:2px solid #FFFFFF;
+    border-radius:50%;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.4);
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+    left:50%; top:50%;
+  }
   .character-row{
     display:flex;
     gap:8px;
@@ -472,6 +496,13 @@
     <div class="field">
       <label for="f-image">Image <span class="optional-hint" id="f-image-hint"></span></label>
       <input type="file" id="f-image" accept="image/*">
+    </div>
+    <div class="field" id="crop-field" style="display:none;">
+      <label>Focal point <span class="optional-hint">drag to choose what shows in the square</span></label>
+      <div class="crop-preview" id="crop-preview">
+        <img id="crop-preview-img" src="" alt="">
+        <div class="crop-crosshair" id="crop-crosshair"></div>
+      </div>
     </div>
     <div class="field">
       <label for="f-type">Type</label>
@@ -670,10 +701,12 @@ function cardHtml(e){
   const characters = (e.characters||[]).map(c =>
     `<p class="field-value">${escapeHtml(c.name || '')}${c.outfit ? ` — ${escapeHtml(c.outfit)}` : ''}</p>`
   ).join('');
+  const cx = e.cropX != null ? e.cropX : 50;
+  const cy = e.cropY != null ? e.cropY : 50;
   return `
   <article class="card">
     <div class="card-image-wrap">
-      <img src="${escapeAttr(e.image)}" alt="saved artwork" loading="lazy" onerror="this.parentElement.classList.add('img-error')">
+      <img src="${escapeAttr(e.image)}" alt="saved artwork" loading="lazy" style="object-position:${cx}% ${cy}%" onerror="this.parentElement.classList.add('img-error')">
       <div class="img-error-fallback">Image not available yet</div>
       ${e.type ? `<span class="type-badge">${escapeHtml(e.type)}</span>` : ''}
       <div class="card-actions">
@@ -731,6 +764,59 @@ document.getElementById('settings-save').addEventListener('click', ()=>{
 const entryOverlay = document.getElementById('entry-overlay');
 const characterList = document.getElementById('character-list');
 let selectedTags = new Set();
+let cropX = 50, cropY = 50;
+
+const cropField = document.getElementById('crop-field');
+const cropPreview = document.getElementById('crop-preview');
+const cropPreviewImg = document.getElementById('crop-preview-img');
+const cropCrosshair = document.getElementById('crop-crosshair');
+
+function updateCropVisual(){
+  cropCrosshair.style.left = cropX + '%';
+  cropCrosshair.style.top = cropY + '%';
+  cropPreviewImg.style.objectPosition = cropX + '% ' + cropY + '%';
+}
+
+function showCropPreview(src){
+  cropPreviewImg.src = src;
+  cropField.style.display = '';
+  updateCropVisual();
+}
+
+function hideCropPreview(){
+  cropPreviewImg.src = '';
+  cropField.style.display = 'none';
+}
+
+function setCropFromEvent(ev){
+  const rect = cropPreview.getBoundingClientRect();
+  const x = ((ev.clientX - rect.left) / rect.width) * 100;
+  const y = ((ev.clientY - rect.top) / rect.height) * 100;
+  cropX = Math.max(0, Math.min(100, Math.round(x)));
+  cropY = Math.max(0, Math.min(100, Math.round(y)));
+  updateCropVisual();
+}
+
+let croppingActive = false;
+cropPreview.addEventListener('pointerdown', (ev)=>{
+  croppingActive = true;
+  cropPreview.setPointerCapture(ev.pointerId);
+  setCropFromEvent(ev);
+});
+cropPreview.addEventListener('pointermove', (ev)=>{
+  if(croppingActive) setCropFromEvent(ev);
+});
+cropPreview.addEventListener('pointerup', ()=> croppingActive = false);
+cropPreview.addEventListener('pointercancel', ()=> croppingActive = false);
+
+document.getElementById('f-image').addEventListener('change', (ev)=>{
+  const file = ev.target.files[0];
+  if(!file) return;
+  cropX = 50; cropY = 50;
+  const reader = new FileReader();
+  reader.onload = () => showCropPreview(reader.result);
+  reader.readAsDataURL(file);
+});
 
 function updateTypeGroups(){
   const type = document.getElementById('f-type').value;
@@ -774,6 +860,8 @@ function resetEntryForm(){
   characterList.innerHTML = '';
   addCharacterRow();
   updateTypeGroups();
+  cropX = 50; cropY = 50;
+  hideCropPreview();
 }
 
 function openEditModal(id){
@@ -804,6 +892,9 @@ function openEditModal(id){
     addCharacterRow();
   }
   updateTypeGroups();
+  cropX = entry.cropX != null ? entry.cropX : 50;
+  cropY = entry.cropY != null ? entry.cropY : 50;
+  if(entry.image) showCropPreview(entry.image); else hideCropPreview();
   entryOverlay.classList.add('open');
 }
 
@@ -925,6 +1016,8 @@ async function submitEntry(){
     const entryData = {
       id,
       image: imagePath,
+      cropX,
+      cropY,
       type,
       params: document.getElementById('f-params').value.trim(),
       artists: type === 'style' ? document.getElementById('f-artists').value.trim() : '',
