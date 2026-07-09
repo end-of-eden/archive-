@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": "1783574912356-45d5v0",
+    "image": "images/1783574912356-45d5v0.png",
+    "type": "prompt",
+    "params": "실험용",
+    "character": "",
+    "artists": "실험",
+    "prompt": "실험용",
+    "negative": "실험용",
+    "tags": [],
+    "date": "2026-07-09"
+  }
+]
