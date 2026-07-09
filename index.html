@@ -79,11 +79,6 @@
     flex-direction:column;
     gap:14px;
   }
-  .corner-settings{
-    position:fixed;
-    top:20px; right:24px;
-    z-index:40;
-  }
   .corner-add{
     position:fixed;
     right:28px; bottom:28px;
@@ -537,7 +532,6 @@
   </div>
 </header>
 
-<button class="icon-btn corner-settings" id="settings-btn" title="Repository settings" aria-label="Repository settings">⚙</button>
 <button class="btn btn-primary corner-add" id="add-fab">Add piece</button>
 
 <div class="controls">
@@ -625,52 +619,22 @@
   </div>
 </div>
 
-<!-- Settings modal -->
-<div class="overlay" id="settings-overlay">
-  <div class="modal">
-    <h2>Repository settings</h2>
-    <p class="modal-sub">Stored only in this browser, never committed. Don't share this site's link with anyone.</p>
-    <div class="field-row">
-      <div class="field">
-        <label for="s-owner">GitHub username</label>
-        <input type="text" id="s-owner" placeholder="jaha">
-      </div>
-      <div class="field">
-        <label for="s-repo">Repository name</label>
-        <input type="text" id="s-repo" placeholder="synapse-archive">
-      </div>
-    </div>
-    <div class="field">
-      <label for="s-branch">Branch</label>
-      <input type="text" id="s-branch" placeholder="main">
-    </div>
-    <div class="field">
-      <label for="s-token">Personal Access Token</label>
-      <input type="password" id="s-token" placeholder="ghp_...">
-      <p class="hint">GitHub → Settings → Developer settings → Fine-grained tokens. Grant Contents: Read and write on this repository.</p>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" id="settings-cancel">Cancel</button>
-      <button class="btn btn-primary" id="settings-save">Save</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-const CONFIG_KEY = 'synapse-archive-config';
+const SUPABASE_URL = 'https://hpswgqgcklyumjqwjdmp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwc3dncWdja2x5dW1qcXdqZG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1Nzk3OTIsImV4cCI6MjA5OTE1NTc5Mn0.gDwiDCapbXJAFWjl9EnytNSZ6f8EDUPb-WvGFB4k1Xc';
+
 let entries = [];
 let activeTags = new Set();
 let currentType = 'all';
 
-function getConfig(){
-  try{ return JSON.parse(localStorage.getItem(CONFIG_KEY)) || {}; }catch(e){ return {}; }
-}
-function setConfig(cfg){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); }
-function hasConfig(){
-  const c = getConfig();
-  return !!(c.owner && c.repo && c.token);
+function sbHeaders(extra){
+  return {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    ...(extra || {})
+  };
 }
 
 function showToast(msg, isError){
@@ -682,10 +646,31 @@ function showToast(msg, isError){
 }
 
 /* ---------------- data load & render ---------------- */
+function rowToEntry(row){
+  return {
+    id: row.id,
+    image: row.image,
+    cropX: row.crop_x != null ? row.crop_x : 50,
+    cropY: row.crop_y != null ? row.crop_y : 50,
+    type: row.type,
+    number: row.number,
+    params: row.params,
+    artists: row.artists,
+    prompt: row.prompt,
+    negative: row.negative,
+    characters: row.characters || [],
+    tags: row.tags || [],
+    date: row.date
+  };
+}
+
 async function loadEntries(){
   try{
-    const res = await fetch('./data.json', { cache:'no-store' });
-    entries = await res.json();
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/entries?select=*&order=created_at.asc`, {
+      headers: sbHeaders()
+    });
+    const rows = await res.json();
+    entries = Array.isArray(rows) ? rows.map(rowToEntry) : [];
   }catch(e){
     entries = [];
   }
@@ -807,33 +792,6 @@ function escapeHtml(str){
 }
 function escapeAttr(str){ return escapeHtml(str); }
 
-/* ---------------- settings modal ---------------- */
-const settingsOverlay = document.getElementById('settings-overlay');
-document.getElementById('settings-btn').addEventListener('click', ()=>{
-  const c = getConfig();
-  document.getElementById('s-owner').value = c.owner || '';
-  document.getElementById('s-repo').value = c.repo || '';
-  document.getElementById('s-branch').value = c.branch || 'main';
-  document.getElementById('s-token').value = c.token || '';
-  settingsOverlay.classList.add('open');
-});
-document.getElementById('settings-cancel').addEventListener('click', ()=> settingsOverlay.classList.remove('open'));
-document.getElementById('settings-save').addEventListener('click', ()=>{
-  const cfg = {
-    owner: document.getElementById('s-owner').value.trim(),
-    repo: document.getElementById('s-repo').value.trim(),
-    branch: document.getElementById('s-branch').value.trim() || 'main',
-    token: document.getElementById('s-token').value.trim()
-  };
-  if(!cfg.owner || !cfg.repo || !cfg.token){
-    showToast('Fill in username, repository, and token.', true);
-    return;
-  }
-  setConfig(cfg);
-  settingsOverlay.classList.remove('open');
-  showToast('Settings saved.');
-});
-
 /* ---------------- entry modal ---------------- */
 const entryOverlay = document.getElementById('entry-overlay');
 const characterList = document.getElementById('character-list');
@@ -950,11 +908,6 @@ function resetEntryForm(){
 }
 
 function openEditModal(id){
-  if(!hasConfig()){
-    showToast('Set up your repository in ⚙ first.', true);
-    settingsOverlay.classList.add('open');
-    return;
-  }
   const entry = entries.find(en => en.id === id);
   if(!entry) return;
   editingId = id;
@@ -985,11 +938,6 @@ function openEditModal(id){
 }
 
 document.getElementById('add-fab').addEventListener('click', ()=>{
-  if(!hasConfig()){
-    showToast('Set up your repository in ⚙ first.', true);
-    settingsOverlay.classList.add('open');
-    return;
-  }
   editingId = null;
   document.getElementById('entry-modal-title').textContent = 'Add new piece';
   resetEntryForm();
@@ -999,68 +947,53 @@ document.getElementById('entry-cancel').addEventListener('click', ()=> entryOver
 
 document.getElementById('entry-submit').addEventListener('click', submitEntry);
 
-/* ---------------- GitHub API helpers ---------------- */
-function ghHeaders(token){
+/* ---------------- Supabase Storage + REST helpers ---------------- */
+async function sbUploadImage(path, file){
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/images/${path}`, {
+    method: 'POST',
+    headers: sbHeaders({ 'Content-Type': file.type || 'application/octet-stream' }),
+    body: file
+  });
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.message || `Image upload failed (${res.status})`);
+  }
+  return `${SUPABASE_URL}/storage/v1/object/public/images/${path}`;
+}
+
+async function sbDeleteImage(path){
+  await fetch(`${SUPABASE_URL}/storage/v1/object/images/${path}`, {
+    method: 'DELETE',
+    headers: sbHeaders()
+  }).catch(()=>{});
+}
+
+function imagePathFromUrl(url){
+  if(!url) return null;
+  const marker = '/storage/v1/object/public/images/';
+  const idx = url.indexOf(marker);
+  return idx >= 0 ? url.slice(idx + marker.length) : null;
+}
+
+function entryToRow(entryData){
   return {
-    'Authorization': `Bearer ${token}`,
-    'Accept': 'application/vnd.github+json'
+    id: entryData.id,
+    image: entryData.image,
+    crop_x: entryData.cropX,
+    crop_y: entryData.cropY,
+    type: entryData.type,
+    number: entryData.number,
+    params: entryData.params,
+    artists: entryData.artists,
+    prompt: entryData.prompt,
+    negative: entryData.negative,
+    characters: entryData.characters,
+    tags: entryData.tags,
+    date: entryData.date
   };
 }
 
-function fileToBase64(file){
-  return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function ghGetFile(cfg, path){
-  const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${cfg.branch}`;
-  const res = await fetch(url, { headers: ghHeaders(cfg.token) });
-  if(res.status === 404) return null;
-  if(!res.ok) throw new Error(`GitHub fetch failed (${res.status})`);
-  return res.json();
-}
-
-async function ghPutFile(cfg, path, base64Content, message, sha){
-  const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
-  const body = { message, content: base64Content, branch: cfg.branch };
-  if(sha) body.sha = sha;
-  const res = await fetch(url, {
-    method:'PUT',
-    headers: { ...ghHeaders(cfg.token), 'Content-Type':'application/json' },
-    body: JSON.stringify(body)
-  });
-  if(!res.ok){
-    const err = await res.json().catch(()=>({}));
-    const e = new Error(err.message || `GitHub save failed (${res.status})`);
-    e.status = res.status;
-    throw e;
-  }
-  return res.json();
-}
-
-async function ghDeleteFile(cfg, path, message, sha){
-  const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
-  const res = await fetch(url, {
-    method:'DELETE',
-    headers: { ...ghHeaders(cfg.token), 'Content-Type':'application/json' },
-    body: JSON.stringify({ message, sha, branch: cfg.branch })
-  });
-  if(!res.ok){
-    const err = await res.json().catch(()=>({}));
-    throw new Error(err.message || `GitHub delete failed (${res.status})`);
-  }
-}
-
-function b64EncodeUnicode(str){
-  return btoa(unescape(encodeURIComponent(str)));
-}
-
 async function submitEntry(){
-  const cfg = getConfig();
   const fileInput = document.getElementById('f-image');
   const file = fileInput.files[0];
   const isEdit = !!editingId;
@@ -1073,18 +1006,14 @@ async function submitEntry(){
   try{
     const existingEntry = isEdit ? entries.find(en => en.id === editingId) : null;
     const id = isEdit ? editingId : `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    let imagePath = isEdit ? existingEntry.image : null;
+    let imageUrl = isEdit ? existingEntry.image : null;
+    const oldImagePath = isEdit ? imagePathFromUrl(existingEntry.image) : null;
 
     if(file){
       const ext = file.name.split('.').pop().toLowerCase();
-      const newImagePath = `images/${id}-${Date.now()}.${ext}`;
-      const base64Image = await fileToBase64(file);
-      await ghPutFile(cfg, newImagePath, base64Image, `${isEdit ? 'Update' : 'Add'} image ${id}`, null);
-      if(isEdit && existingEntry.image){
-        const oldImg = await ghGetFile(cfg, existingEntry.image);
-        if(oldImg) await ghDeleteFile(cfg, existingEntry.image, `Remove old image ${id}`, oldImg.sha);
-      }
-      imagePath = newImagePath;
+      const newImagePath = `${id}-${Date.now()}.${ext}`;
+      imageUrl = await sbUploadImage(newImagePath, file);
+      if(oldImagePath) await sbDeleteImage(oldImagePath);
     }
 
     const type = document.getElementById('f-type').value;
@@ -1095,7 +1024,7 @@ async function submitEntry(){
 
     const entryData = {
       id,
-      image: imagePath,
+      image: imageUrl,
       cropX,
       cropY,
       type,
@@ -1109,41 +1038,34 @@ async function submitEntry(){
       date: isEdit ? (existingEntry.date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10)
     };
 
-    const maxAttempts = 3;
-    let currentEntries = [];
-    for(let attempt = 1; attempt <= maxAttempts; attempt++){
-      const current = await ghGetFile(cfg, 'data.json');
-      let sha = null;
-      currentEntries = [];
-      if(current){
-        sha = current.sha;
-        currentEntries = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
-      }
+    const row = entryToRow(entryData);
 
-      if(isEdit){
-        const idx = currentEntries.findIndex(en => en.id === id);
-        if(idx >= 0) currentEntries[idx] = entryData;
-        else currentEntries.push(entryData);
-      }else{
-        currentEntries.push(entryData);
+    if(isEdit){
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/entries?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+        body: JSON.stringify(row)
+      });
+      if(!res.ok){
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.message || `Update failed (${res.status})`);
       }
-
-      try{
-        const newContentB64 = b64EncodeUnicode(JSON.stringify(currentEntries, null, 2));
-        await ghPutFile(cfg, 'data.json', newContentB64, `${isEdit ? 'Update' : 'Add'} entry ${id}`, sha);
-        break;
-      }catch(err){
-        if(err.status === 409 && attempt < maxAttempts) continue;
-        throw err;
+    }else{
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/entries`, {
+        method: 'POST',
+        headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+        body: JSON.stringify(row)
+      });
+      if(!res.ok){
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.message || `Save failed (${res.status})`);
       }
     }
 
-    entries = currentEntries;
-    renderTags();
-    renderGallery();
+    await loadEntries();
     entryOverlay.classList.remove('open');
     editingId = null;
-    showToast('Saved. Give GitHub Pages a minute to catch up.');
+    showToast('Saved.');
   }catch(err){
     showToast(err.message || 'Save failed.', true);
   }finally{
@@ -1153,28 +1075,24 @@ async function submitEntry(){
 }
 
 async function deleteEntry(id){
-  if(!hasConfig()){ showToast('Set up your repository in ⚙ first.', true); return; }
   if(!confirm("Delete this piece? This can't be undone.")) return;
-  const cfg = getConfig();
   const entry = entries.find(e => e.id === id);
   if(!entry) return;
 
   try{
-    const current = await ghGetFile(cfg, 'data.json');
-    if(!current) throw new Error("Couldn't find data.json.");
-    const currentEntries = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
-    const filtered = currentEntries.filter(e => e.id !== id);
-    const newContentB64 = b64EncodeUnicode(JSON.stringify(filtered, null, 2));
-    await ghPutFile(cfg, 'data.json', newContentB64, `Remove entry ${id}`, current.sha);
-
-    const imgFile = await ghGetFile(cfg, entry.image);
-    if(imgFile){
-      await ghDeleteFile(cfg, entry.image, `Remove image ${id}`, imgFile.sha);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/entries?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: sbHeaders()
+    });
+    if(!res.ok){
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.message || `Delete failed (${res.status})`);
     }
 
-    entries = filtered;
-    renderTags();
-    renderGallery();
+    const imgPath = imagePathFromUrl(entry.image);
+    if(imgPath) await sbDeleteImage(imgPath);
+
+    await loadEntries();
     showToast('Deleted.');
   }catch(err){
     showToast(err.message || 'Delete failed.', true);
