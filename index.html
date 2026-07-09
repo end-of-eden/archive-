@@ -14,9 +14,10 @@
     --surface-2:#F1F1F1;
     --border:#E2E2E2;
     --border-soft:#EBEBEB;
-    --accent:#303030;
-    --accent-soft:#30303014;
-    --accent-2:#303030;
+    --accent:#A6332B;
+    --accent-soft:#A6332B1F;
+    --accent-2:#A6332B;
+    --gold:#C9A227;
     --text:#303030;
     --text-muted:#6B6B6B;
     --text-faint:#9A9A9A;
@@ -24,8 +25,8 @@
     --font-body:'Open Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
     --font-mono:'JetBrains Mono', monospace;
   }
-  ::selection{ background:#303030; color:#FFFFFF; }
-  ::-moz-selection{ background:#303030; color:#FFFFFF; }
+  ::selection{ background:#A6332B; color:#FFFFFF; }
+  ::-moz-selection{ background:#A6332B; color:#FFFFFF; }
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
   body{
@@ -142,6 +143,20 @@
     border-bottom-color:var(--accent);
     font-weight:500;
   }
+  .secret-btn.secret-active{
+    color:var(--accent);
+  }
+  .secret-btn{
+    background:none;
+    border:none;
+    color:var(--text-faint);
+    font-size:14px;
+    padding:8px 4px;
+    margin-left:auto;
+    cursor:pointer;
+    transition:color 0.15s, transform 0.15s;
+  }
+  .secret-btn:hover{ color:var(--accent); transform:scale(1.08); }
 
   /* ---------- Gallery ---------- */
   main{
@@ -287,6 +302,10 @@
     -webkit-appearance:none !important;
   }
   .copy-block::-webkit-scrollbar-corner{ background:transparent; }
+
+  /* 크롬, 엣지, 사파리 브라우저 */
+  ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+
   .copy-block:hover{ background:var(--surface-2); }
   .copy-block .copy-text{ transition:opacity 0.15s; }
   .copy-block.copied{ background:var(--surface-2); }
@@ -536,9 +555,9 @@
 
 <div class="controls">
   <div class="type-tabs" id="type-tabs">
-    <button class="type-tab active" data-type="all">All</button>
-    <button class="type-tab" data-type="style">Style</button>
+    <button class="type-tab active" data-type="style">Style</button>
     <button class="type-tab" data-type="prompt">Prompt</button>
+    <button class="secret-btn" id="secret-btn" title="???" aria-label="Secret">(^╷ ̫ ╷^)ﾉ❤︎</button>
   </div>
   <div class="tag-row" id="tag-row"></div>
 </div>
@@ -568,6 +587,7 @@
       <select id="f-type">
         <option value="style">Style</option>
         <option value="prompt">Prompt</option>
+        <option value="secret">Secret</option>
       </select>
     </div>
     <div class="field">
@@ -619,6 +639,21 @@
   </div>
 </div>
 
+<!-- Secret unlock modal -->
+<div class="overlay" id="secret-overlay">
+  <div class="modal">
+    <h2>(^╷ ̫ ╷^)ﾉ❤︎</h2>
+    <p class="modal-sub">Enter the password.</p>
+    <div class="field">
+      <input type="password" id="secret-password" placeholder="••••••••">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="secret-cancel">Cancel</button>
+      <button class="btn btn-primary" id="secret-submit">Unlock</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -627,7 +662,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 let entries = [];
 let activeTags = new Set();
-let currentType = 'all';
+let currentType = 'style';
 
 function sbHeaders(extra){
   return {
@@ -680,7 +715,7 @@ async function loadEntries(){
 
 function allTags(){
   const s = new Set();
-  entries.forEach(e => (e.tags||[]).forEach(t => s.add(t)));
+  entries.filter(e => e.type === currentType).forEach(e => (e.tags||[]).forEach(t => s.add(t)));
   return Array.from(s).sort();
 }
 
@@ -702,7 +737,7 @@ function renderTags(){
 }
 
 function matchesFilters(entry){
-  if(currentType !== 'all' && entry.type !== currentType) return false;
+  if(entry.type !== currentType) return false;
   if(activeTags.size > 0){
     const tags = entry.tags || [];
     const hit = tags.some(t => activeTags.has(t));
@@ -852,8 +887,9 @@ document.getElementById('f-image').addEventListener('change', (ev)=>{
 
 function updateTypeGroups(){
   const type = document.getElementById('f-type').value;
+  const group = type === 'secret' ? 'prompt' : type;
   document.querySelectorAll('.type-group').forEach(el=>{
-    el.classList.toggle('hidden', el.dataset.group !== type);
+    el.classList.toggle('hidden', el.dataset.group !== group);
   });
 }
 
@@ -897,7 +933,7 @@ function resetEntryForm(){
   ['f-params','f-artists','f-prompt','f-negative','f-number'].forEach(id=> document.getElementById(id).value = '');
   document.getElementById('f-image').value = '';
   document.getElementById('f-image-hint').textContent = '';
-  document.getElementById('f-type').value = (currentType === 'prompt') ? 'prompt' : 'style';
+  document.getElementById('f-type').value = currentType;
   selectedTags.clear();
   document.getElementById('preset-tags').querySelectorAll('.tag-chip').forEach(c=> c.classList.remove('active'));
   characterList.innerHTML = '';
@@ -1031,9 +1067,9 @@ async function submitEntry(){
       number: document.getElementById('f-number').value.trim(),
       params: document.getElementById('f-params').value.trim(),
       artists: type === 'style' ? document.getElementById('f-artists').value.trim() : '',
-      prompt: type === 'prompt' ? document.getElementById('f-prompt').value.trim() : '',
+      prompt: (type === 'prompt' || type === 'secret') ? document.getElementById('f-prompt').value.trim() : '',
       negative: document.getElementById('f-negative').value.trim(),
-      characters: type === 'prompt' ? characters : [],
+      characters: (type === 'prompt' || type === 'secret') ? characters : [],
       tags: Array.from(selectedTags),
       date: isEdit ? (existingEntry.date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10)
     };
@@ -1103,9 +1139,59 @@ async function deleteEntry(id){
 document.querySelectorAll('.type-tab').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     currentType = btn.dataset.type;
+    activeTags.clear();
     document.querySelectorAll('.type-tab').forEach(b=> b.classList.toggle('active', b === btn));
+    document.getElementById('secret-btn').classList.remove('secret-active');
+    renderTags();
     renderGallery();
   });
+});
+
+/* ---------------- secret tab ---------------- */
+const SECRET_HASH = 'd4ebe249aeb656f93143920b1ca7897c26fe04a064674d7c1849b435acb41ca2';
+const SECRET_SESSION_KEY = 'synapse-secret-unlocked';
+
+async function sha256Hex(str){
+  const enc = new TextEncoder().encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+const secretOverlay = document.getElementById('secret-overlay');
+const secretBtn = document.getElementById('secret-btn');
+
+function enterSecretMode(){
+  currentType = 'secret';
+  activeTags.clear();
+  document.querySelectorAll('.type-tab').forEach(b=> b.classList.remove('active'));
+  secretBtn.classList.add('secret-active');
+  renderTags();
+  renderGallery();
+}
+
+secretBtn.addEventListener('click', ()=>{
+  if(sessionStorage.getItem(SECRET_SESSION_KEY) === '1'){
+    enterSecretMode();
+    return;
+  }
+  document.getElementById('secret-password').value = '';
+  secretOverlay.classList.add('open');
+  document.getElementById('secret-password').focus();
+});
+document.getElementById('secret-cancel').addEventListener('click', ()=> secretOverlay.classList.remove('open'));
+document.getElementById('secret-submit').addEventListener('click', async ()=>{
+  const val = document.getElementById('secret-password').value;
+  const hash = await sha256Hex(val);
+  if(hash === SECRET_HASH){
+    sessionStorage.setItem(SECRET_SESSION_KEY, '1');
+    secretOverlay.classList.remove('open');
+    enterSecretMode();
+  }else{
+    showToast('Wrong password.', true);
+  }
+});
+document.getElementById('secret-password').addEventListener('keydown', (ev)=>{
+  if(ev.key === 'Enter') document.getElementById('secret-submit').click();
 });
 
 document.getElementById('gallery').addEventListener('click', (ev)=>{
