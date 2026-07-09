@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Synapse Archive</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg transform='translate(0,1.5)'%3E%3Cpath d='M23.6 0c-3.4 0-6.3 2-7.6 4.9C14.7 2 11.8 0 8.4 0 3.8 0 0 3.8 0 8.4c0 9.3 15.3 17.6 15.9 17.9.2.1.4.2.6.2s.4-.1.6-.2c.6-.3 15.9-8.6 15.9-17.9C33 3.8 29.2 0 24.6 0z' fill='%23A6332B'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -279,13 +280,20 @@
   .copy-wrap.copied{ background:var(--surface-2); }
   .copy-block{
     max-height:76px;
-    overflow-y:auto;
+    overflow-y:scroll;
     cursor:pointer;
     padding:6px 8px;
-    scrollbar-width:none; /* 파이어폭스 */
-    -ms-overflow-style:none; /* 인터넷 익스플로러 */
   }
-  .copy-block::-webkit-scrollbar{ display:none; } /* 크롬, 사파리, 엣지, 오페라 */
+  .copy-block::-webkit-scrollbar{
+    width:10px;
+  }
+  .copy-block::-webkit-scrollbar-thumb{
+    background:#A6332B;
+    border-radius:10px;
+  }
+  .copy-block::-webkit-scrollbar-track{
+    background:rgba(166,51,43,.1);
+  }
 
   .copy-text{ transition:opacity 0.15s; }
   .copy-wrap.copied .copy-text{ opacity:0.15; }
@@ -616,7 +624,7 @@
     </div>
 
     <div class="field">
-      <label for="f-params">Parameters</label>
+      <label for="f-params" id="f-params-label">Parameters</label>
       <input type="text" id="f-params" placeholder="28 / 6 / 0.3">
     </div>
 
@@ -817,7 +825,7 @@ function cardHtml(e){
       ${fieldWithCopy('prompt', e.prompt)}
       ${characters ? `<div><p class="field-label">characters</p>${characters}</div>` : ''}
       ${fieldWithCopy('negative', e.negative, 'muted')}
-      ${e.params ? `<div><p class="field-label">parameters</p><p class="field-value muted">${escapeHtml(e.params)}</p></div>` : ''}
+      ${e.params ? `<div><p class="field-label">${e.type === 'style' ? 'settings' : 'note'}</p><p class="field-value muted">${escapeHtml(e.params)}</p></div>` : ''}
       ${tags ? `<div class="chips">${tags}</div>` : ''}
     </div>
   </article>`;
@@ -892,6 +900,7 @@ function updateTypeGroups(){
   document.querySelectorAll('.type-group').forEach(el=>{
     el.classList.toggle('hidden', el.dataset.group !== group);
   });
+  document.getElementById('f-params-label').textContent = type === 'style' ? 'Settings' : 'Note';
 }
 
 function relabelCharacters(){
