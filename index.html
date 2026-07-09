@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synapse Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFFFFF;
+    --surface:#FAFAFA;
+    --surface-2:#F1F1F1;
+    --border:#E2E2E2;
+    --border-soft:#EBEBEB;
+    --accent:#303030;
+    --accent-soft:#30303014;
+    --accent-2:#303030;
+    --text:#303030;
+    --text-muted:#6B6B6B;
+    --text-faint:#9A9A9A;
+    --radius:14px;
+    --font-body:'Open Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
+  ::selection{ background:#303030; color:#FFFFFF; }
+  ::-moz-selection{ background:#303030; color:#FFFFFF; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{ color:var(--accent); }
+  button{ font-family:inherit; }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* ---------- Header ---------- */
+  header.hero{
+    position:relative;
+    padding:64px 32px 40px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .hero-inner{ position:relative; z-index:1; max-width:1100px; margin:0 auto; text-align:center; }
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 14px;
+  }
+  h1.title{
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:clamp(36px, 6vw, 60px);
+    line-height:1.05;
+    margin:0 0 12px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--text-muted);
+    font-size:15px;
+    max-width:520px;
+    line-height:1.6;
+    margin:0 auto;
+  }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    max-width:1100px;
+    margin:28px auto 0;
+    padding:0 32px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .search-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .icon-btn{
+    background:transparent;
+    border:1px solid transparent;
+    border-radius:10px;
+    color:var(--text-muted);
+    width:40px; height:40px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition:background-color 0.15s, color 0.15s;
+  }
+  .icon-btn:hover{ background:var(--surface-2); color:var(--text); }
+  .tag-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .tag-chip{
+    font-family:var(--font-mono);
+    font-size:12px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    padding:6px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:all 0.15s;
+  }
+  .tag-chip:hover{ border-color:var(--accent-soft); color:var(--text); }
+  .tag-chip.active{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+
+  /* ---------- Gallery ---------- */
+  main{
+    max-width:1100px;
+    margin:0 auto;
+    padding:32px;
+  }
+  .gallery{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:18px;
+  }
+  @media (max-width:960px){ .gallery{ grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:560px){ .gallery{ grid-template-columns:1fr; } .controls, main, header.hero{ padding-left:18px; padding-right:18px; } }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    transition:border-color 0.2s, transform 0.2s;
+  }
+  .card:hover{ border-color:var(--accent-soft); transform:translateY(-2px); }
+  .card-image-wrap{
+    position:relative;
+    aspect-ratio:3/4;
+    background:var(--surface-2);
+    overflow:hidden;
+  }
+  .card-image-wrap img{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  .card-delete{
+    position:absolute; top:8px; right:8px;
+    width:26px; height:26px;
+    border-radius:50%;
+    background:rgba(15,14,23,0.75);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    font-size:14px;
+    opacity:0;
+    transition:opacity 0.15s, color 0.15s;
+  }
+  .card:hover .card-delete{ opacity:1; }
+  .card-delete:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+
+  .card-toggle{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 14px;
+    background:none; border:none; border-top:1px solid var(--border-soft);
+    color:var(--text-muted);
+    font-family:var(--font-mono);
+    font-size:11px;
+    cursor:pointer;
+    width:100%;
+    text-align:left;
+  }
+  .card-toggle .params{ color:var(--accent); }
+  .card-toggle .chev{ transition:transform 0.2s; flex-shrink:0; margin-left:8px; }
+  .card-toggle.collapsed .chev{ transform:rotate(-90deg); }
+
+  .card-meta{
+    padding:0 14px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .card-meta.hidden{ display:none; }
+  .card-meta .field-label{
+    font-family:var(--font-mono);
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    margin:0 0 3px;
+  }
+  .card-meta .field-value{
+    font-size:12.5px;
+    line-height:1.55;
+    color:var(--text);
+    margin:0;
+    word-break:break-word;
+  }
+  .card-meta .field-value.muted{ color:var(--text-muted); }
+  .card-meta .chips{
+    display:flex; flex-wrap:wrap; gap:5px;
+  }
+  .mini-chip{
+    font-size:10.5px;
+    font-family:var(--font-mono);
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    padding:2px 8px;
+    border-radius:999px;
+  }
+
+  /* ---------- Empty state ---------- */
+  .empty-state{
+    grid-column:1/-1;
+    text-align:center;
+    padding:80px 20px;
+    color:var(--text-muted);
+  }
+  .empty-state h2{
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:24px;
+    color:var(--text);
+    margin:0 0 8px;
+  }
+  .empty-state p{ font-size:14px; margin:0; }
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(10,9,15,0.72);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    overflow-y:auto;
+    z-index:50;
+    padding:60px 20px;
+  }
+  .overlay.open{ display:flex; }
+  .modal{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    width:100%;
+    max-width:520px;
+    padding:28px;
+  }
+  .modal h2{
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:22px;
+    margin:0 0 4px;
+  }
+  .modal .modal-sub{
+    color:var(--text-muted);
+    font-size:13px;
+    margin:0 0 22px;
+  }
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .field input[type=text], .field input[type=password], .field textarea{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    padding:10px 12px;
+    font-size:13.5px;
+    font-family:var(--font-body);
+    resize:vertical;
+  }
+  .field textarea{ min-height:64px; line-height:1.5; }
+  .field input[type=file]{
+    width:100%;
+    font-size:13px;
+    color:var(--text-muted);
+  }
+  .field-row{ display:flex; gap:12px; }
+  .field-row .field{ flex:1; }
+  .modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:22px;
+  }
+  .btn{
+    border-radius:8px;
+    padding:10px 18px;
+    font-size:13.5px;
+    cursor:pointer;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text);
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .btn:hover{ border-color:var(--text-muted); }
+  .btn-primary{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#FFFFFF;
+    font-weight:500;
+  }
+  .btn-primary:hover{ opacity:0.9; border-color:var(--accent); }
+  .btn-primary:disabled{ opacity:0.5; cursor:not-allowed; }
+  .hint{ font-size:11.5px; color:var(--text-faint); margin-top:6px; line-height:1.5; }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed;
+    left:50%; bottom:28px;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:12px 20px;
+    border-radius:10px;
+    font-size:13px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.2s, transform 0.2s;
+    z-index:60;
+    max-width:90vw;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+  .toast.error{ border-color:var(--accent-2); color:var(--accent-2); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">private archive · nai generations</p>
+    <h1 class="title">Synapse Archive</h1>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="search-row">
+    <button class="btn btn-primary" id="add-fab">Add piece</button>
+    <button class="icon-btn" id="settings-btn" title="Repository settings" aria-label="Repository settings">⚙</button>
+  </div>
+  <div class="tag-row" id="tag-row"></div>
+</div>
+
+<main>
+  <div class="gallery" id="gallery"></div>
+</main>
+
+<!-- Entry modal -->
+<div class="overlay" id="entry-overlay">
+  <div class="modal">
+    <h2>Add new piece</h2>
+    <p class="modal-sub">Commits the image and prompt straight to your repository.</p>
+    <div class="field">
+      <label for="f-image">Image</label>
+      <input type="file" id="f-image" accept="image/*">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-params">Parameters</label>
+        <input type="text" id="f-params" placeholder="28 / 6 / 0.3">
+      </div>
+      <div class="field">
+        <label for="f-character">Character</label>
+        <input type="text" id="f-character" placeholder="Eden">
+      </div>
+    </div>
+    <div class="field">
+      <label for="f-artists">Artists</label>
+      <input type="text" id="f-artists" placeholder="artist:miyamoyan, artist:jp06, ...">
+    </div>
+    <div class="field">
+      <label for="f-prompt">Prompt</label>
+      <textarea id="f-prompt" placeholder="couple, hetero, 1girl, 1boy, ..."></textarea>
+    </div>
+    <div class="field">
+      <label for="f-negative">Negative</label>
+      <textarea id="f-negative" placeholder="text, logo, watermark, ..."></textarea>
+    </div>
+    <div class="field">
+      <label for="f-tags">Tags (comma separated)</label>
+      <input type="text" id="f-tags" placeholder="couple, eoe, portrait">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="entry-cancel">Cancel</button>
+      <button class="btn btn-primary" id="entry-submit">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="overlay" id="settings-overlay">
+  <div class="modal">
+    <h2>Repository settings</h2>
+    <p class="modal-sub">Stored only in this browser, never committed. Don't share this site's link with anyone.</p>
+    <div class="field-row">
+      <div class="field">
+        <label for="s-owner">GitHub username</label>
+        <input type="text" id="s-owner" placeholder="jaha">
+      </div>
+      <div class="field">
+        <label for="s-repo">Repository name</label>
+        <input type="text" id="s-repo" placeholder="synapse-archive">
+      </div>
+    </div>
+    <div class="field">
+      <label for="s-branch">Branch</label>
+      <input type="text" id="s-branch" placeholder="main">
+    </div>
+    <div class="field">
+      <label for="s-token">Personal Access Token</label>
+      <input type="password" id="s-token" placeholder="ghp_...">
+      <p class="hint">GitHub → Settings → Developer settings → Fine-grained tokens. Grant Contents: Read and write on this repository.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="settings-cancel">Cancel</button>
+      <button class="btn btn-primary" id="settings-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CONFIG_KEY = 'synapse-archive-config';
+let entries = [];
+let activeTags = new Set();
+
+function getConfig(){
+  try{ return JSON.parse(localStorage.getItem(CONFIG_KEY)) || {}; }catch(e){ return {}; }
+}
+function setConfig(cfg){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); }
+function hasConfig(){
+  const c = getConfig();
+  return !!(c.owner && c.repo && c.token);
+}
+
+function showToast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(()=>{ t.className = 'toast'; }, 3600);
+}
+
+/* ---------------- data load & render ---------------- */
+async function loadEntries(){
+  try{
+    const res = await fetch('./data.json', { cache:'no-store' });
+    entries = await res.json();
+  }catch(e){
+    entries = [];
+  }
+  renderTags();
+  renderGallery();
+}
+
+function allTags(){
+  const s = new Set();
+  entries.forEach(e => (e.tags||[]).forEach(t => s.add(t)));
+  return Array.from(s).sort();
+}
+
+function renderTags(){
+  const row = document.getElementById('tag-row');
+  const tags = allTags();
+  if(tags.length === 0){ row.innerHTML=''; return; }
+  row.innerHTML = tags.map(t =>
+    `<button class="tag-chip${activeTags.has(t)?' active':''}" data-tag="${escapeAttr(t)}">${escapeHtml(t)}</button>`
+  ).join('');
+  row.querySelectorAll('.tag-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const tag = btn.dataset.tag;
+      if(activeTags.has(tag)) activeTags.delete(tag); else activeTags.add(tag);
+      renderTags();
+      renderGallery();
+    });
+  });
+}
+
+function matchesFilters(entry){
+  if(activeTags.size > 0){
+    const tags = entry.tags || [];
+    const hit = tags.some(t => activeTags.has(t));
+    if(!hit) return false;
+  }
+  return true;
+}
+
+function renderGallery(){
+  const gallery = document.getElementById('gallery');
+  const visible = entries.filter(matchesFilters);
+  if(entries.length === 0){
+    gallery.innerHTML = `<div class="empty-state">
+      <h2>No pieces saved yet</h2>
+      <p>Use the + button in the bottom right to add your first one.</p>
+    </div>`;
+    return;
+  }
+  if(visible.length === 0){
+    gallery.innerHTML = `<div class="empty-state">
+      <h2>Nothing matches</h2>
+      <p>Try adjusting your tag filters.</p>
+    </div>`;
+    return;
+  }
+  gallery.innerHTML = visible.map(cardHtml).join('');
+
+  gallery.querySelectorAll('.card-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const meta = btn.nextElementSibling;
+      meta.classList.toggle('hidden');
+      btn.classList.toggle('collapsed');
+    });
+  });
+  gallery.querySelectorAll('.card-delete').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      deleteEntry(btn.dataset.id);
+    });
+  });
+}
+
+function cardHtml(e){
+  const tags = (e.tags||[]).map(t=>`<span class="mini-chip">${escapeHtml(t)}</span>`).join('');
+  return `
+  <article class="card">
+    <div class="card-image-wrap">
+      <img src="${escapeAttr(e.image)}" alt="${escapeAttr(e.character || 'saved artwork')}" loading="lazy">
+      <button class="card-delete" data-id="${escapeAttr(e.id)}" aria-label="Delete">×</button>
+    </div>
+    <button class="card-toggle">
+      <span class="params">${escapeHtml(e.params || '')}</span>
+      <span class="chev">▾</span>
+    </button>
+    <div class="card-meta">
+      ${e.artists ? `<div><p class="field-label">artists</p><p class="field-value muted">${escapeHtml(e.artists)}</p></div>` : ''}
+      ${e.prompt ? `<div><p class="field-label">prompt</p><p class="field-value">${escapeHtml(e.prompt)}</p></div>` : ''}
+      ${e.negative ? `<div><p class="field-label">negative</p><p class="field-value muted">${escapeHtml(e.negative)}</p></div>` : ''}
+      ${tags ? `<div class="chips">${tags}</div>` : ''}
+    </div>
+  </article>`;
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+function escapeAttr(str){ return escapeHtml(str); }
+
+/* ---------------- settings modal ---------------- */
+const settingsOverlay = document.getElementById('settings-overlay');
+document.getElementById('settings-btn').addEventListener('click', ()=>{
+  const c = getConfig();
+  document.getElementById('s-owner').value = c.owner || '';
+  document.getElementById('s-repo').value = c.repo || '';
+  document.getElementById('s-branch').value = c.branch || 'main';
+  document.getElementById('s-token').value = c.token || '';
+  settingsOverlay.classList.add('open');
+});
+document.getElementById('settings-cancel').addEventListener('click', ()=> settingsOverlay.classList.remove('open'));
+document.getElementById('settings-save').addEventListener('click', ()=>{
+  const cfg = {
+    owner: document.getElementById('s-owner').value.trim(),
+    repo: document.getElementById('s-repo').value.trim(),
+    branch: document.getElementById('s-branch').value.trim() || 'main',
+    token: document.getElementById('s-token').value.trim()
+  };
+  if(!cfg.owner || !cfg.repo || !cfg.token){
+    showToast('Fill in username, repository, and token.', true);
+    return;
+  }
+  setConfig(cfg);
+  settingsOverlay.classList.remove('open');
+  showToast('Settings saved.');
+});
+
+/* ---------------- entry modal ---------------- */
+const entryOverlay = document.getElementById('entry-overlay');
+document.getElementById('add-fab').addEventListener('click', ()=>{
+  if(!hasConfig()){
+    showToast('Set up your repository in ⚙ first.', true);
+    settingsOverlay.classList.add('open');
+    return;
+  }
+  ['f-params','f-character','f-artists','f-prompt','f-negative','f-tags'].forEach(id=> document.getElementById(id).value = '');
+  document.getElementById('f-image').value = '';
+  entryOverlay.classList.add('open');
+});
+document.getElementById('entry-cancel').addEventListener('click', ()=> entryOverlay.classList.remove('open'));
+
+document.getElementById('entry-submit').addEventListener('click', submitEntry);
+
+/* ---------------- GitHub API helpers ---------------- */
+function ghHeaders(token){
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Accept': 'application/vnd.github+json'
+  };
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function ghGetFile(cfg, path){
+  const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${cfg.branch}`;
+  const res = await fetch(url, { headers: ghHeaders(cfg.token) });
+  if(res.status === 404) return null;
+  if(!res.ok) throw new Error(`GitHub fetch failed (${res.status})`);
+  return res.json();
+}
+
+async function ghPutFile(cfg, path, base64Content, message, sha){
+  const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
+  const body = { message, content: base64Content, branch: cfg.branch };
+  if(sha) body.sha = sha;
+  const res = await fetch(url, {
+    method:'PUT',
+    headers: { ...ghHeaders(cfg.token), 'Content-Type':'application/json' },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.message || `GitHub save failed (${res.status})`);
+  }
+  return res.json();
+}
+
+async function ghDeleteFile(cfg, path, message, sha){
+  const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
+  const res = await fetch(url, {
+    method:'DELETE',
+    headers: { ...ghHeaders(cfg.token), 'Content-Type':'application/json' },
+    body: JSON.stringify({ message, sha, branch: cfg.branch })
+  });
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.message || `GitHub delete failed (${res.status})`);
+  }
+}
+
+function b64EncodeUnicode(str){
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+async function submitEntry(){
+  const cfg = getConfig();
+  const fileInput = document.getElementById('f-image');
+  const file = fileInput.files[0];
+  if(!file){ showToast('Choose an image first.', true); return; }
+
+  const submitBtn = document.getElementById('entry-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving...';
+
+  try{
+    const ext = file.name.split('.').pop().toLowerCase();
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const imagePath = `images/${id}.${ext}`;
+    const base64Image = await fileToBase64(file);
+
+    await ghPutFile(cfg, imagePath, base64Image, `Add image ${id}`, null);
+
+    const current = await ghGetFile(cfg, 'data.json');
+    let currentEntries = [];
+    let sha = null;
+    if(current){
+      sha = current.sha;
+      currentEntries = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
+    }
+
+    const tagsRaw = document.getElementById('f-tags').value;
+    const newEntry = {
+      id,
+      image: imagePath,
+      params: document.getElementById('f-params').value.trim(),
+      character: document.getElementById('f-character').value.trim(),
+      artists: document.getElementById('f-artists').value.trim(),
+      prompt: document.getElementById('f-prompt').value.trim(),
+      negative: document.getElementById('f-negative').value.trim(),
+      tags: tagsRaw.split(',').map(t=>t.trim()).filter(Boolean),
+      date: new Date().toISOString().slice(0,10)
+    };
+    currentEntries.unshift(newEntry);
+
+    const newContentB64 = b64EncodeUnicode(JSON.stringify(currentEntries, null, 2));
+    await ghPutFile(cfg, 'data.json', newContentB64, `Add entry ${id}`, sha);
+
+    entries = currentEntries;
+    renderTags();
+    renderGallery();
+    entryOverlay.classList.remove('open');
+    showToast('Saved. Give GitHub Pages a minute to catch up.');
+  }catch(err){
+    showToast(err.message || 'Save failed.', true);
+  }finally{
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Save';
+  }
+}
+
+async function deleteEntry(id){
+  if(!hasConfig()){ showToast('Set up your repository in ⚙ first.', true); return; }
+  if(!confirm("Delete this piece? This can't be undone.")) return;
+  const cfg = getConfig();
+  const entry = entries.find(e => e.id === id);
+  if(!entry) return;
+
+  try{
+    const current = await ghGetFile(cfg, 'data.json');
+    if(!current) throw new Error("Couldn't find data.json.");
+    const currentEntries = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
+    const filtered = currentEntries.filter(e => e.id !== id);
+    const newContentB64 = b64EncodeUnicode(JSON.stringify(filtered, null, 2));
+    await ghPutFile(cfg, 'data.json', newContentB64, `Remove entry ${id}`, current.sha);
+
+    const imgFile = await ghGetFile(cfg, entry.image);
+    if(imgFile){
+      await ghDeleteFile(cfg, entry.image, `Remove image ${id}`, imgFile.sha);
+    }
+
+    entries = filtered;
+    renderTags();
+    renderGallery();
+    showToast('Deleted.');
+  }catch(err){
+    showToast(err.message || 'Delete failed.', true);
+  }
+}
+
+loadEntries();
+</script>
+</body>
+</html>
