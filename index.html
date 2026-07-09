@@ -79,10 +79,16 @@
     flex-direction:column;
     gap:14px;
   }
-  .search-row{
-    display:flex;
-    gap:10px;
-    align-items:center;
+  .corner-settings{
+    position:fixed;
+    top:20px; right:24px;
+    z-index:40;
+  }
+  .corner-add{
+    position:fixed;
+    right:28px; bottom:28px;
+    z-index:40;
+    box-shadow:0 8px 20px rgba(0,0,0,0.18);
   }
   .icon-btn{
     background:transparent;
@@ -117,6 +123,29 @@
     background:var(--accent-soft);
     border-color:var(--accent);
     color:var(--accent);
+  }
+  .type-tabs{
+    display:flex;
+    gap:4px;
+    border-bottom:1px solid var(--border-soft);
+    padding-bottom:2px;
+  }
+  .type-tab{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-size:13px;
+    padding:8px 4px;
+    margin-right:16px;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    transition:color 0.15s, border-color 0.15s;
+  }
+  .type-tab:hover{ color:var(--text); }
+  .type-tab.active{
+    color:var(--text);
+    border-bottom-color:var(--accent);
+    font-weight:500;
   }
 
   /* ---------- Gallery ---------- */
@@ -167,6 +196,17 @@
   }
   .card:hover .card-delete{ opacity:1; }
   .card-delete:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+  .type-badge{
+    position:absolute; top:8px; left:8px;
+    background:rgba(15,14,23,0.75);
+    color:#FFFFFF;
+    font-family:var(--font-mono);
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    padding:3px 8px;
+    border-radius:999px;
+  }
 
   .card-toggle{
     display:flex; align-items:center; justify-content:space-between;
@@ -276,7 +316,7 @@
     color:var(--text-muted);
     margin-bottom:6px;
   }
-  .field input[type=text], .field input[type=password], .field textarea{
+  .field input[type=text], .field input[type=password], .field textarea, .field select{
     width:100%;
     background:var(--surface-2);
     border:1px solid var(--border);
@@ -357,10 +397,14 @@
   </div>
 </header>
 
+<button class="icon-btn corner-settings" id="settings-btn" title="Repository settings" aria-label="Repository settings">⚙</button>
+<button class="btn btn-primary corner-add" id="add-fab">Add piece</button>
+
 <div class="controls">
-  <div class="search-row">
-    <button class="btn btn-primary" id="add-fab">Add piece</button>
-    <button class="icon-btn" id="settings-btn" title="Repository settings" aria-label="Repository settings">⚙</button>
+  <div class="type-tabs" id="type-tabs">
+    <button class="type-tab active" data-type="all">All</button>
+    <button class="type-tab" data-type="style">Style</button>
+    <button class="type-tab" data-type="prompt">Prompt</button>
   </div>
   <div class="tag-row" id="tag-row"></div>
 </div>
@@ -377,6 +421,13 @@
     <div class="field">
       <label for="f-image">Image</label>
       <input type="file" id="f-image" accept="image/*">
+    </div>
+    <div class="field">
+      <label for="f-type">Type</label>
+      <select id="f-type">
+        <option value="style">Style</option>
+        <option value="prompt">Prompt</option>
+      </select>
     </div>
     <div class="field-row">
       <div class="field">
@@ -448,6 +499,7 @@
 const CONFIG_KEY = 'synapse-archive-config';
 let entries = [];
 let activeTags = new Set();
+let currentType = 'all';
 
 function getConfig(){
   try{ return JSON.parse(localStorage.getItem(CONFIG_KEY)) || {}; }catch(e){ return {}; }
@@ -502,6 +554,7 @@ function renderTags(){
 }
 
 function matchesFilters(entry){
+  if(currentType !== 'all' && entry.type !== currentType) return false;
   if(activeTags.size > 0){
     const tags = entry.tags || [];
     const hit = tags.some(t => activeTags.has(t));
@@ -550,6 +603,7 @@ function cardHtml(e){
   <article class="card">
     <div class="card-image-wrap">
       <img src="${escapeAttr(e.image)}" alt="${escapeAttr(e.character || 'saved artwork')}" loading="lazy">
+      ${e.type ? `<span class="type-badge">${escapeHtml(e.type)}</span>` : ''}
       <button class="card-delete" data-id="${escapeAttr(e.id)}" aria-label="Delete">×</button>
     </div>
     <button class="card-toggle">
@@ -607,6 +661,7 @@ document.getElementById('add-fab').addEventListener('click', ()=>{
   }
   ['f-params','f-character','f-artists','f-prompt','f-negative','f-tags'].forEach(id=> document.getElementById(id).value = '');
   document.getElementById('f-image').value = '';
+  document.getElementById('f-type').value = (currentType === 'prompt') ? 'prompt' : 'style';
   entryOverlay.classList.add('open');
 });
 document.getElementById('entry-cancel').addEventListener('click', ()=> entryOverlay.classList.remove('open'));
@@ -701,6 +756,7 @@ async function submitEntry(){
     const newEntry = {
       id,
       image: imagePath,
+      type: document.getElementById('f-type').value,
       params: document.getElementById('f-params').value.trim(),
       character: document.getElementById('f-character').value.trim(),
       artists: document.getElementById('f-artists').value.trim(),
@@ -755,6 +811,15 @@ async function deleteEntry(id){
     showToast(err.message || 'Delete failed.', true);
   }
 }
+
+/* ---------------- type tabs ---------------- */
+document.querySelectorAll('.type-tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    currentType = btn.dataset.type;
+    document.querySelectorAll('.type-tab').forEach(b=> b.classList.toggle('active', b === btn));
+    renderGallery();
+  });
+});
 
 loadEntries();
 </script>
