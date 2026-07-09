@@ -263,20 +263,17 @@
     word-break:break-word;
   }
   .card-meta .field-value.muted{ color:var(--text-muted); }
-  .copy-btn{
-    font-family:var(--font-mono);
-    font-size:10.5px;
-    background:var(--surface-2);
-    border:1px solid var(--border);
-    color:var(--text-muted);
-    padding:4px 10px;
-    border-radius:6px;
+  .copy-block{
+    max-height:76px;
+    overflow-y:auto;
     cursor:pointer;
-    margin-top:4px;
-    transition:background-color 0.15s, color 0.15s, border-color 0.15s;
+    padding:6px 8px;
+    margin:0 -8px;
+    border-radius:6px;
+    transition:background-color 0.15s, color 0.15s;
   }
-  .copy-btn:hover{ border-color:var(--accent); color:var(--text); }
-  .copy-btn.copied{ background:var(--accent); border-color:var(--accent); color:#FFFFFF; }
+  .copy-block:hover{ background:var(--surface-2); color:var(--text); }
+  .copy-block.copied{ background:var(--accent); color:#FFFFFF; }
   .card-meta .chips{
     display:flex; flex-wrap:wrap; gap:5px;
   }
@@ -734,8 +731,7 @@ function fieldWithCopy(label, str, extraClass){
   if(!str) return '';
   return `<div>
     <p class="field-label">${escapeHtml(label)}</p>
-    <p class="field-value${extraClass ? ' ' + extraClass : ''}">${escapeHtml(str)}</p>
-    <button type="button" class="copy-btn" data-copy="${escapeAttr(str)}">Copy</button>
+    <p class="field-value copy-block${extraClass ? ' ' + extraClass : ''}" data-copy="${escapeAttr(str)}" title="Click to copy">${escapeHtml(str)}</p>
   </div>`;
 }
 
@@ -1161,17 +1157,13 @@ document.querySelectorAll('.type-tab').forEach(btn=>{
 });
 
 document.getElementById('gallery').addEventListener('click', (ev)=>{
-  const el = ev.target.closest('.copy-btn');
+  const el = ev.target.closest('.copy-block');
   if(!el) return;
   const text = el.dataset.copy;
   navigator.clipboard.writeText(text).then(()=>{
-    const original = el.textContent;
     el.classList.add('copied');
-    el.textContent = 'Copied';
-    setTimeout(()=>{
-      el.classList.remove('copied');
-      el.textContent = original;
-    }, 900);
+    showToast('Copied to clipboard.');
+    setTimeout(()=> el.classList.remove('copied'), 600);
   }).catch(()=> showToast('Could not copy to clipboard.', true));
 });
 
