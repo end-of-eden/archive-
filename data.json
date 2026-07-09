@@ -58,5 +58,20 @@
     "characters": [],
     "tags": [],
     "date": "2026-07-09"
+  },
+  {
+    "id": "1783582503898-8g3ti3",
+    "image": "images/1783582503898-8g3ti3-1783582503898.png",
+    "cropX": 50,
+    "cropY": 50,
+    "type": "style",
+    "number": "005",
+    "params": "ARCH - 28 / 6 / 0.3",
+    "artists": "1.7::artist:soybean_(hisoybean) ::, 0.32::artist:bloodybeni, mgong520 ::, 0.35::artist:m_m_pb:: 0.4::qianben_shan::,0.55::96yottea::, 0.7::chimmyming::, 2.2::aritst:wanke::, 3.3::artist:duckchuni::, solo artist, -10::artist collaboration ::, -3::simple illustration ::, 2.5::semi-realistic::, -2::realistic::,  strong contrast, natural lips, cinematic lighting, -3::simple background::, -1::neon::, 1::glossy texture, glossy paint:: digital rendering, 1::dramatic shadows, sharp highlights:: 1.5::nolineart, 3D:: -3::simple illustration::, best quality, masterpiece, year 2024, year 2025,",
+    "prompt": "",
+    "negative": "blank page, text, logo, watermark, too many watermarks, reference, username, artist name, signature, artist:xinzoruo, artist:milkpanda, artist collaboration, 4koma, 2koma, toon (style), oekaki, chibi, turnaround, film grain, heavy film grain, monochrome, dithering, halftone, screentones, dated, old, 1990s (style), mutation, deformed, distorted, disfigured, artistic error, chromatic aberration, disorganized colors, scan artifacts, jpeg artifacts, bad anatomy, asymmetrical face, bad face, unnatural hair, bad face, mob face, bad eyes, empty eyes, bad proportions, bad limbs, amputee, bad arm, bad hands, bad hand structure, bad leg, extra leg, worst quality, bad quality, lowres, blurry, upscaled, fewer details, unfinished, incomplete, amateur, cheesy, unsatisfactory, inadequate, deficient, subpar, poor, displeasing, very displeasing, bad illustration, bad portrait, realistic, excessive light,",
+    "characters": [],
+    "tags": [],
+    "date": "2026-07-09"
   }
 ]
