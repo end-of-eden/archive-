@@ -268,6 +268,7 @@
     word-break:break-word;
   }
   .card-meta .field-value.muted{ color:var(--text-muted); }
+  .copy-field{ cursor:pointer; }
   .copy-block{
     position:relative;
     max-height:76px;
@@ -320,7 +321,7 @@
     font-weight:500;
     letter-spacing:0.06em;
     text-transform:uppercase;
-    color:var(--text);
+    color:var(--gold);
     opacity:0;
     pointer-events:none;
     transition:opacity 0.15s;
@@ -642,8 +643,8 @@
 <!-- Secret unlock modal -->
 <div class="overlay" id="secret-overlay">
   <div class="modal">
-    <h2>(^╷ ̫ ╷^)ﾉ❤︎</h2>
-    <p class="modal-sub">Enter the password.</p>
+    <h2>Password</h2>
+    <p class="modal-sub">Enter the password to continue.</p>
     <div class="field">
       <input type="password" id="secret-password" placeholder="••••••••">
     </div>
@@ -781,7 +782,7 @@ function renderGallery(){
 
 function fieldWithCopy(label, str, extraClass){
   if(!str) return '';
-  return `<div>
+  return `<div class="copy-field">
     <p class="field-label">${escapeHtml(label)}</p>
     <p class="field-value copy-block${extraClass ? ' ' + extraClass : ''}" data-copy="${escapeAttr(str)}" title="Click to copy">
       <span class="copy-text">${escapeHtml(str)}</span>
@@ -944,40 +945,44 @@ function resetEntryForm(){
 }
 
 function openEditModal(id){
-  const entry = entries.find(en => en.id === id);
-  if(!entry) return;
-  editingId = id;
-  document.getElementById('entry-modal-title').textContent = 'Edit piece';
-  document.getElementById('f-params').value = entry.params || '';
-  document.getElementById('f-number').value = entry.number || '';
-  document.getElementById('f-artists').value = entry.artists || '';
-  document.getElementById('f-prompt').value = entry.prompt || '';
-  document.getElementById('f-negative').value = entry.negative || '';
-  document.getElementById('f-type').value = entry.type || 'style';
-  document.getElementById('f-image').value = '';
-  document.getElementById('f-image-hint').textContent = '(leave empty to keep current image)';
-  selectedTags = new Set(entry.tags || []);
-  document.getElementById('preset-tags').querySelectorAll('.tag-chip').forEach(c=>{
-    c.classList.toggle('active', selectedTags.has(c.dataset.tag));
+  requireUnlock(()=>{
+    const entry = entries.find(en => en.id === id);
+    if(!entry) return;
+    editingId = id;
+    document.getElementById('entry-modal-title').textContent = 'Edit piece';
+    document.getElementById('f-params').value = entry.params || '';
+    document.getElementById('f-number').value = entry.number || '';
+    document.getElementById('f-artists').value = entry.artists || '';
+    document.getElementById('f-prompt').value = entry.prompt || '';
+    document.getElementById('f-negative').value = entry.negative || '';
+    document.getElementById('f-type').value = entry.type || 'style';
+    document.getElementById('f-image').value = '';
+    document.getElementById('f-image-hint').textContent = '(leave empty to keep current image)';
+    selectedTags = new Set(entry.tags || []);
+    document.getElementById('preset-tags').querySelectorAll('.tag-chip').forEach(c=>{
+      c.classList.toggle('active', selectedTags.has(c.dataset.tag));
+    });
+    characterList.innerHTML = '';
+    if(entry.characters && entry.characters.length){
+      entry.characters.forEach(c => addCharacterRow(c.outfit));
+    }else{
+      addCharacterRow();
+    }
+    updateTypeGroups();
+    cropX = entry.cropX != null ? entry.cropX : 50;
+    cropY = entry.cropY != null ? entry.cropY : 50;
+    if(entry.image) showCropPreview(entry.image); else hideCropPreview();
+    entryOverlay.classList.add('open');
   });
-  characterList.innerHTML = '';
-  if(entry.characters && entry.characters.length){
-    entry.characters.forEach(c => addCharacterRow(c.outfit));
-  }else{
-    addCharacterRow();
-  }
-  updateTypeGroups();
-  cropX = entry.cropX != null ? entry.cropX : 50;
-  cropY = entry.cropY != null ? entry.cropY : 50;
-  if(entry.image) showCropPreview(entry.image); else hideCropPreview();
-  entryOverlay.classList.add('open');
 }
 
 document.getElementById('add-fab').addEventListener('click', ()=>{
-  editingId = null;
-  document.getElementById('entry-modal-title').textContent = 'Add new piece';
-  resetEntryForm();
-  entryOverlay.classList.add('open');
+  requireUnlock(()=>{
+    editingId = null;
+    document.getElementById('entry-modal-title').textContent = 'Add new piece';
+    resetEntryForm();
+    entryOverlay.classList.add('open');
+  });
 });
 document.getElementById('entry-cancel').addEventListener('click', ()=> entryOverlay.classList.remove('open'));
 
@@ -1110,29 +1115,31 @@ async function submitEntry(){
   }
 }
 
-async function deleteEntry(id){
-  if(!confirm("Delete this piece? This can't be undone.")) return;
-  const entry = entries.find(e => e.id === id);
-  if(!entry) return;
+function deleteEntry(id){
+  requireUnlock(async ()=>{
+    if(!confirm("Delete this piece? This can't be undone.")) return;
+    const entry = entries.find(e => e.id === id);
+    if(!entry) return;
 
-  try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/entries?id=eq.${id}`, {
-      method: 'DELETE',
-      headers: sbHeaders()
-    });
-    if(!res.ok){
-      const err = await res.json().catch(()=>({}));
-      throw new Error(err.message || `Delete failed (${res.status})`);
+    try{
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/entries?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: sbHeaders()
+      });
+      if(!res.ok){
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.message || `Delete failed (${res.status})`);
+      }
+
+      const imgPath = imagePathFromUrl(entry.image);
+      if(imgPath) await sbDeleteImage(imgPath);
+
+      await loadEntries();
+      showToast('Deleted.');
+    }catch(err){
+      showToast(err.message || 'Delete failed.', true);
     }
-
-    const imgPath = imagePathFromUrl(entry.image);
-    if(imgPath) await sbDeleteImage(imgPath);
-
-    await loadEntries();
-    showToast('Deleted.');
-  }catch(err){
-    showToast(err.message || 'Delete failed.', true);
-  }
+  });
 }
 
 /* ---------------- type tabs ---------------- */
@@ -1147,9 +1154,9 @@ document.querySelectorAll('.type-tab').forEach(btn=>{
   });
 });
 
-/* ---------------- secret tab ---------------- */
-const SECRET_HASH = 'd4ebe249aeb656f93143920b1ca7897c26fe04a064674d7c1849b435acb41ca2';
-const SECRET_SESSION_KEY = 'synapse-secret-unlocked';
+/* ---------------- password gate (write access + secret tab) ---------------- */
+const ACCESS_HASH = 'd4ebe249aeb656f93143920b1ca7897c26fe04a064674d7c1849b435acb41ca2';
+const ACCESS_SESSION_KEY = 'synapse-unlocked';
 
 async function sha256Hex(str){
   const enc = new TextEncoder().encode(str);
@@ -1157,8 +1164,24 @@ async function sha256Hex(str){
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
+function isUnlocked(){
+  return sessionStorage.getItem(ACCESS_SESSION_KEY) === '1';
+}
+
 const secretOverlay = document.getElementById('secret-overlay');
 const secretBtn = document.getElementById('secret-btn');
+let pendingUnlockAction = null;
+
+function requireUnlock(action){
+  if(isUnlocked()){
+    action();
+    return;
+  }
+  pendingUnlockAction = action;
+  document.getElementById('secret-password').value = '';
+  secretOverlay.classList.add('open');
+  document.getElementById('secret-password').focus();
+}
 
 function enterSecretMode(){
   currentType = 'secret';
@@ -1169,23 +1192,20 @@ function enterSecretMode(){
   renderGallery();
 }
 
-secretBtn.addEventListener('click', ()=>{
-  if(sessionStorage.getItem(SECRET_SESSION_KEY) === '1'){
-    enterSecretMode();
-    return;
-  }
-  document.getElementById('secret-password').value = '';
-  secretOverlay.classList.add('open');
-  document.getElementById('secret-password').focus();
+secretBtn.addEventListener('click', ()=> requireUnlock(enterSecretMode));
+document.getElementById('secret-cancel').addEventListener('click', ()=>{
+  secretOverlay.classList.remove('open');
+  pendingUnlockAction = null;
 });
-document.getElementById('secret-cancel').addEventListener('click', ()=> secretOverlay.classList.remove('open'));
 document.getElementById('secret-submit').addEventListener('click', async ()=>{
   const val = document.getElementById('secret-password').value;
   const hash = await sha256Hex(val);
-  if(hash === SECRET_HASH){
-    sessionStorage.setItem(SECRET_SESSION_KEY, '1');
+  if(hash === ACCESS_HASH){
+    sessionStorage.setItem(ACCESS_SESSION_KEY, '1');
     secretOverlay.classList.remove('open');
-    enterSecretMode();
+    const action = pendingUnlockAction;
+    pendingUnlockAction = null;
+    if(action) action();
   }else{
     showToast('Wrong password.', true);
   }
@@ -1195,7 +1215,9 @@ document.getElementById('secret-password').addEventListener('keydown', (ev)=>{
 });
 
 document.getElementById('gallery').addEventListener('click', (ev)=>{
-  const el = ev.target.closest('.copy-block');
+  const wrapper = ev.target.closest('.copy-field');
+  if(!wrapper) return;
+  const el = wrapper.querySelector('.copy-block');
   if(!el) return;
   const text = el.dataset.copy;
   navigator.clipboard.writeText(text).then(()=>{
