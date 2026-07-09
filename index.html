@@ -275,6 +275,35 @@
     padding:2px 8px;
     border-radius:999px;
   }
+  .chip-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    max-height:88px;
+    overflow-y:auto;
+    padding-right:2px;
+  }
+  .prompt-chip{
+    font-size:10.5px;
+    font-family:var(--font-mono);
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    padding:2px 8px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background-color 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .prompt-chip:hover{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+    color:var(--text);
+  }
+  .prompt-chip.copied{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#FFFFFF;
+  }
 
   /* ---------- Empty state ---------- */
   .empty-state{
@@ -716,6 +745,13 @@ function renderGallery(){
   });
 }
 
+function tagChipsHtml(str){
+  if(!str) return '';
+  return str.split(',').map(t=>t.trim()).filter(Boolean).map(t=>{
+    return `<span class="prompt-chip" data-copy="${escapeAttr(t)}" title="Click to copy">${escapeHtml(t)}</span>`;
+  }).join('');
+}
+
 function cardHtml(e){
   const tags = (e.tags||[]).map(t=>`<span class="mini-chip">${escapeHtml(t)}</span>`).join('');
   const characters = (e.characters||[]).map(c =>
@@ -723,6 +759,9 @@ function cardHtml(e){
   ).join('');
   const cx = e.cropX != null ? e.cropX : 50;
   const cy = e.cropY != null ? e.cropY : 50;
+  const artistChips = tagChipsHtml(e.artists);
+  const promptChips = tagChipsHtml(e.prompt);
+  const negativeChips = tagChipsHtml(e.negative);
   return `
   <article class="card">
     <div class="card-image-wrap">
@@ -739,10 +778,10 @@ function cardHtml(e){
       <span class="chev">▾</span>
     </button>
     <div class="card-meta hidden">
-      ${e.artists ? `<div><p class="field-label">artists</p><p class="field-value muted">${escapeHtml(e.artists)}</p></div>` : ''}
-      ${e.prompt ? `<div><p class="field-label">prompt</p><p class="field-value">${escapeHtml(e.prompt)}</p></div>` : ''}
+      ${artistChips ? `<div><p class="field-label">artists</p><div class="chip-list">${artistChips}</div></div>` : ''}
+      ${promptChips ? `<div><p class="field-label">prompt</p><div class="chip-list">${promptChips}</div></div>` : ''}
       ${characters ? `<div><p class="field-label">characters</p>${characters}</div>` : ''}
-      ${e.negative ? `<div><p class="field-label">negative</p><p class="field-value muted">${escapeHtml(e.negative)}</p></div>` : ''}
+      ${negativeChips ? `<div><p class="field-label">negative</p><div class="chip-list">${negativeChips}</div></div>` : ''}
       ${e.params ? `<div><p class="field-label">parameters</p><p class="field-value muted">${escapeHtml(e.params)}</p></div>` : ''}
       ${tags ? `<div class="chips">${tags}</div>` : ''}
     </div>
@@ -753,6 +792,21 @@ function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
 function escapeAttr(str){ return escapeHtml(str); }
+
+document.getElementById('gallery').addEventListener('click', (ev)=>{
+  const chip = ev.target.closest('.prompt-chip');
+  if(!chip) return;
+  const text = chip.dataset.copy;
+  navigator.clipboard.writeText(text).then(()=>{
+    const original = chip.textContent;
+    chip.classList.add('copied');
+    chip.textContent = 'Copied';
+    setTimeout(()=>{
+      chip.textContent = original;
+      chip.classList.remove('copied');
+    }, 900);
+  }).catch(()=> showToast('Could not copy to clipboard.', true));
+});
 
 /* ---------------- settings modal ---------------- */
 const settingsOverlay = document.getElementById('settings-overlay');
