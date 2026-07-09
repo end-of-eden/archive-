@@ -264,16 +264,38 @@
   }
   .card-meta .field-value.muted{ color:var(--text-muted); }
   .copy-block{
+    position:relative;
     max-height:76px;
     overflow-y:auto;
     cursor:pointer;
     padding:6px 8px;
     margin:0 -8px;
     border-radius:6px;
-    transition:background-color 0.15s, color 0.15s;
+    transition:background-color 0.15s;
+    scrollbar-width:thin;
+    scrollbar-color:#A6332B transparent;
   }
-  .copy-block:hover{ background:var(--surface-2); color:var(--text); }
-  .copy-block.copied{ background:var(--accent); color:#FFFFFF; }
+  .copy-block::-webkit-scrollbar{ width:5px; }
+  .copy-block::-webkit-scrollbar-track{ background:transparent; }
+  .copy-block::-webkit-scrollbar-thumb{ background:#A6332B; border-radius:999px; }
+  .copy-block::-webkit-scrollbar-button{ display:none; height:0; width:0; }
+  .copy-block:hover{ background:var(--surface-2); }
+  .copy-block .copy-text{ transition:opacity 0.15s; }
+  .copy-block.copied{ background:var(--surface-2); }
+  .copy-block.copied .copy-text{ opacity:0.2; }
+  .copy-block .copy-feedback{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--text);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.15s;
+  }
+  .copy-block.copied .copy-feedback{ opacity:1; }
   .card-meta .chips{
     display:flex; flex-wrap:wrap; gap:5px;
   }
@@ -731,7 +753,10 @@ function fieldWithCopy(label, str, extraClass){
   if(!str) return '';
   return `<div>
     <p class="field-label">${escapeHtml(label)}</p>
-    <p class="field-value copy-block${extraClass ? ' ' + extraClass : ''}" data-copy="${escapeAttr(str)}" title="Click to copy">${escapeHtml(str)}</p>
+    <p class="field-value copy-block${extraClass ? ' ' + extraClass : ''}" data-copy="${escapeAttr(str)}" title="Click to copy">
+      <span class="copy-text">${escapeHtml(str)}</span>
+      <span class="copy-feedback">Copied</span>
+    </p>
   </div>`;
 }
 
@@ -1162,8 +1187,7 @@ document.getElementById('gallery').addEventListener('click', (ev)=>{
   const text = el.dataset.copy;
   navigator.clipboard.writeText(text).then(()=>{
     el.classList.add('copied');
-    showToast('Copied to clipboard.');
-    setTimeout(()=> el.classList.remove('copied'), 600);
+    setTimeout(()=> el.classList.remove('copied'), 1000);
   }).catch(()=> showToast('Could not copy to clipboard.', true));
 });
 
