@@ -279,21 +279,27 @@
   .copy-block::-webkit-scrollbar-track{ background:transparent; }
   .copy-block::-webkit-scrollbar-thumb{ background:#A6332B; border-radius:999px; }
   .copy-block::-webkit-scrollbar-button{ display:none; height:0; width:0; }
+  .copy-block::-webkit-scrollbar-button:start:decrement,
+  .copy-block::-webkit-scrollbar-button:end:increment{ display:none; height:0; width:0; }
   .copy-block:hover{ background:var(--surface-2); }
   .copy-block .copy-text{ transition:opacity 0.15s; }
   .copy-block.copied{ background:var(--surface-2); }
-  .copy-block.copied .copy-text{ opacity:0.2; }
+  .copy-block.copied .copy-text{ opacity:0.15; }
   .copy-block .copy-feedback{
     position:absolute; inset:0;
+    z-index:2;
     display:flex; align-items:center; justify-content:center;
+    background:var(--surface-2);
     font-family:var(--font-mono);
     font-size:11px;
+    font-weight:500;
     letter-spacing:0.06em;
     text-transform:uppercase;
     color:var(--text);
     opacity:0;
     pointer-events:none;
     transition:opacity 0.15s;
+    border-radius:6px;
   }
   .copy-block.copied .copy-feedback{ opacity:1; }
   .card-meta .chips{
