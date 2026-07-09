@@ -99,28 +99,6 @@
     transition:background-color 0.15s, color 0.15s;
   }
   .icon-btn:hover{ background:var(--surface-2); color:var(--text); }
-  .tag-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-  }
-  .tag-chip{
-    font-family:var(--font-mono);
-    font-size:12px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    color:var(--text-muted);
-    padding:6px 12px;
-    border-radius:999px;
-    cursor:pointer;
-    transition:all 0.15s;
-  }
-  .tag-chip:hover{ border-color:var(--accent-soft); color:var(--text); }
-  .tag-chip.active{
-    background:var(--accent-soft);
-    border-color:var(--accent);
-    color:var(--accent);
-  }
   .type-tabs{
     display:flex;
     gap:4px;
@@ -190,6 +168,7 @@
   }
   .card-image-wrap img{
     width:100%; height:100%; object-fit:cover; display:block;
+    cursor:zoom-in;
   }
   .card-image-wrap.img-error img{ display:none; }
   .img-error-fallback{
@@ -314,18 +293,6 @@
     border-radius:6px;
   }
   .copy-wrap.copied .copy-feedback{ opacity:1; }
-  .card-meta .chips{
-    display:flex; flex-wrap:wrap; gap:5px;
-  }
-  .mini-chip{
-    font-size:10.5px;
-    font-family:var(--font-mono);
-    background:var(--surface-2);
-    border:1px solid var(--border);
-    color:var(--text-muted);
-    padding:2px 8px;
-    border-radius:999px;
-  }
 
   /* ---------- Empty state ---------- */
   .empty-state{
@@ -355,6 +322,33 @@
     padding:60px 20px;
   }
   .overlay.open{ display:flex; }
+  .lightbox-overlay{
+    align-items:center;
+    padding:40px;
+    background:rgba(10,9,15,0.9);
+    cursor:zoom-out;
+  }
+  .lightbox-overlay img{
+    max-width:100%;
+    max-height:90vh;
+    object-fit:contain;
+    border-radius:8px;
+    cursor:default;
+  }
+  .lightbox-close{
+    position:fixed;
+    top:20px; right:24px;
+    width:40px; height:40px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.1);
+    border:1px solid rgba(255,255,255,0.3);
+    color:#FFFFFF;
+    font-size:20px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    z-index:51;
+  }
+  .lightbox-close:hover{ background:rgba(255,255,255,0.2); }
   .modal{
     background:var(--surface);
     border:1px solid var(--border);
@@ -498,11 +492,6 @@
     font-size:16px;
   }
   .character-row .remove-character:hover{ color:var(--accent-2); border-color:var(--accent-2); }
-  .preset-tags{
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-  }
 
   /* ---------- Toast ---------- */
   .toast{
@@ -566,7 +555,6 @@
     <button class="type-tab" data-type="prompt">Prompt</button>
     <button class="secret-btn" id="secret-btn" title="???" aria-label="Secret">(^╷ ̫ ╷^)ﾉ❤︎</button>
   </div>
-  <div class="tag-row" id="tag-row"></div>
 </div>
 
 <main>
@@ -628,17 +616,6 @@
       <input type="text" id="f-params" placeholder="28 / 6 / 0.3">
     </div>
 
-    <div class="field">
-      <label>Tags</label>
-      <div class="preset-tags" id="preset-tags">
-        <button type="button" class="tag-chip" data-tag="background">Background</button>
-        <button type="button" class="tag-chip" data-tag="composition">Composition</button>
-        <button type="button" class="tag-chip" data-tag="pose">Pose</button>
-        <button type="button" class="tag-chip" data-tag="outfit">Outfit</button>
-        <button type="button" class="tag-chip" data-tag="expression">Expression</button>
-      </div>
-    </div>
-
     <div class="modal-actions">
       <button class="btn" id="entry-cancel">Cancel</button>
       <button class="btn btn-primary" id="entry-submit">Save</button>
@@ -661,6 +638,12 @@
   </div>
 </div>
 
+<!-- Lightbox -->
+<div class="overlay lightbox-overlay" id="lightbox-overlay">
+  <button class="lightbox-close" id="lightbox-close" aria-label="Close">×</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -668,7 +651,6 @@ const SUPABASE_URL = 'https://hpswgqgcklyumjqwjdmp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwc3dncWdja2x5dW1qcXdqZG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1Nzk3OTIsImV4cCI6MjA5OTE1NTc5Mn0.gDwiDCapbXJAFWjl9EnytNSZ6f8EDUPb-WvGFB4k1Xc';
 
 let entries = [];
-let activeTags = new Set();
 let currentType = 'style';
 
 function sbHeaders(extra){
@@ -716,41 +698,11 @@ async function loadEntries(){
   }catch(e){
     entries = [];
   }
-  renderTags();
   renderGallery();
 }
 
-function allTags(){
-  const s = new Set();
-  entries.filter(e => e.type === currentType).forEach(e => (e.tags||[]).forEach(t => s.add(t)));
-  return Array.from(s).sort();
-}
-
-function renderTags(){
-  const row = document.getElementById('tag-row');
-  const tags = allTags();
-  if(tags.length === 0){ row.innerHTML=''; return; }
-  row.innerHTML = tags.map(t =>
-    `<button class="tag-chip${activeTags.has(t)?' active':''}" data-tag="${escapeAttr(t)}">${escapeHtml(t)}</button>`
-  ).join('');
-  row.querySelectorAll('.tag-chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const tag = btn.dataset.tag;
-      if(activeTags.has(tag)) activeTags.delete(tag); else activeTags.add(tag);
-      renderTags();
-      renderGallery();
-    });
-  });
-}
-
 function matchesFilters(entry){
-  if(entry.type !== currentType) return false;
-  if(activeTags.size > 0){
-    const tags = entry.tags || [];
-    const hit = tags.some(t => activeTags.has(t));
-    if(!hit) return false;
-  }
-  return true;
+  return entry.type === currentType;
 }
 
 function renderGallery(){
@@ -784,6 +736,12 @@ function renderGallery(){
       openEditModal(btn.dataset.id);
     });
   });
+  gallery.querySelectorAll('.card-image-wrap img').forEach(img=>{
+    img.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      openLightbox(img.src);
+    });
+  });
 }
 
 function fieldWithCopy(label, str, extraClass){
@@ -800,7 +758,6 @@ function fieldWithCopy(label, str, extraClass){
 }
 
 function cardHtml(e){
-  const tags = (e.tags||[]).map(t=>`<span class="mini-chip">${escapeHtml(t)}</span>`).join('');
   const characters = (e.characters||[])
     .map(c => fieldWithCopy((c.name || '').toLowerCase(), c.outfit))
     .join('');
@@ -826,7 +783,6 @@ function cardHtml(e){
       ${characters}
       ${fieldWithCopy('negative', e.negative, 'muted')}
       ${e.params ? `<div><p class="field-label">${e.type === 'style' ? 'settings' : 'note'}</p><p class="field-value muted">${escapeHtml(e.params)}</p></div>` : ''}
-      ${tags ? `<div class="chips">${tags}</div>` : ''}
     </div>
   </article>`;
 }
@@ -839,7 +795,6 @@ function escapeAttr(str){ return escapeHtml(str); }
 /* ---------------- entry modal ---------------- */
 const entryOverlay = document.getElementById('entry-overlay');
 const characterList = document.getElementById('character-list');
-let selectedTags = new Set();
 let cropX = 50, cropY = 50;
 
 const cropField = document.getElementById('crop-field');
@@ -929,14 +884,6 @@ function addCharacterRow(outfit){
 document.getElementById('add-character-btn').addEventListener('click', ()=> addCharacterRow());
 document.getElementById('f-type').addEventListener('change', updateTypeGroups);
 
-document.getElementById('preset-tags').querySelectorAll('.tag-chip').forEach(chip=>{
-  chip.addEventListener('click', ()=>{
-    const tag = chip.dataset.tag;
-    if(selectedTags.has(tag)){ selectedTags.delete(tag); chip.classList.remove('active'); }
-    else{ selectedTags.add(tag); chip.classList.add('active'); }
-  });
-});
-
 let editingId = null;
 
 function resetEntryForm(){
@@ -944,8 +891,6 @@ function resetEntryForm(){
   document.getElementById('f-image').value = '';
   document.getElementById('f-image-hint').textContent = '';
   document.getElementById('f-type').value = currentType;
-  selectedTags.clear();
-  document.getElementById('preset-tags').querySelectorAll('.tag-chip').forEach(c=> c.classList.remove('active'));
   characterList.innerHTML = '';
   addCharacterRow();
   updateTypeGroups();
@@ -967,10 +912,6 @@ function openEditModal(id){
     document.getElementById('f-type').value = entry.type || 'style';
     document.getElementById('f-image').value = '';
     document.getElementById('f-image-hint').textContent = '(leave empty to keep current image)';
-    selectedTags = new Set(entry.tags || []);
-    document.getElementById('preset-tags').querySelectorAll('.tag-chip').forEach(c=>{
-      c.classList.toggle('active', selectedTags.has(c.dataset.tag));
-    });
     characterList.innerHTML = '';
     if(entry.characters && entry.characters.length){
       entry.characters.forEach(c => addCharacterRow(c.outfit));
@@ -1084,7 +1025,7 @@ async function submitEntry(){
       prompt: (type === 'prompt' || type === 'secret') ? document.getElementById('f-prompt').value.trim() : '',
       negative: document.getElementById('f-negative').value.trim(),
       characters: (type === 'prompt' || type === 'secret') ? characters : [],
-      tags: Array.from(selectedTags),
+      tags: [],
       date: isEdit ? (existingEntry.date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10)
     };
 
@@ -1155,10 +1096,8 @@ function deleteEntry(id){
 document.querySelectorAll('.type-tab').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     currentType = btn.dataset.type;
-    activeTags.clear();
     document.querySelectorAll('.type-tab').forEach(b=> b.classList.toggle('active', b === btn));
     document.getElementById('secret-btn').classList.remove('secret-active');
-    renderTags();
     renderGallery();
   });
 });
@@ -1194,10 +1133,8 @@ function requireUnlock(action){
 
 function enterSecretMode(){
   currentType = 'secret';
-  activeTags.clear();
   document.querySelectorAll('.type-tab').forEach(b=> b.classList.remove('active'));
   secretBtn.classList.add('secret-active');
-  renderTags();
   renderGallery();
 }
 
@@ -1233,6 +1170,29 @@ document.getElementById('gallery').addEventListener('click', (ev)=>{
     el.classList.add('copied');
     setTimeout(()=> el.classList.remove('copied'), 1000);
   }).catch(()=> showToast('Could not copy to clipboard.', true));
+});
+
+/* ---------------- lightbox ---------------- */
+const lightboxOverlay = document.getElementById('lightbox-overlay');
+const lightboxImg = document.getElementById('lightbox-img');
+
+function openLightbox(src){
+  lightboxImg.src = src;
+  lightboxOverlay.classList.add('open');
+}
+function closeLightbox(){
+  lightboxOverlay.classList.remove('open');
+  lightboxImg.src = '';
+}
+document.getElementById('lightbox-close').addEventListener('click', (ev)=>{
+  ev.stopPropagation();
+  closeLightbox();
+});
+lightboxOverlay.addEventListener('click', ()=> closeLightbox());
+document.addEventListener('keydown', (ev)=>{
+  if(ev.key !== 'Escape') return;
+  if(lightboxOverlay.classList.contains('open')){ closeLightbox(); return; }
+  document.querySelectorAll('.overlay.open').forEach(el=> el.classList.remove('open'));
 });
 
 loadEntries();
