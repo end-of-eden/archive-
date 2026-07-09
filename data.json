@@ -88,5 +88,20 @@
     "characters": [],
     "tags": [],
     "date": "2026-07-09"
+  },
+  {
+    "id": "1783582610457-sjyxne",
+    "image": "images/1783582610457-sjyxne-1783582610457.png",
+    "cropX": 50,
+    "cropY": 50,
+    "type": "style",
+    "number": "007_PIXEL",
+    "params": "28 7 0.34",
+    "artists": "0.2::artist:hungry clicker::, artist:qin ningshui buleng, waisshu (sougyokyuu), 0.2::artist:kawacy, ::, 2::artist:ssxssss 848 ::,7::artist:chanoo artz::, 0.9::artist:japtangtang2 ::, 2::artist:zero q 0q::, 1.5::artist:bm94199 ::,1::artist:duckchuni::,0.2::artist:pigeon666 ::, 2::artist:sakalgath::, year 2024, year 2025, 1.5::amazing quality, highres, very aesthetic, incredibly absurdres, masterpiece, 4k, no text, detailed shade, detailed body ::, 7::pixel art, small pixels:: 4::artist:hiroita, artist:wanpaku pixels,::, upper body, 3::close-up, face focus,",
+    "prompt": "",
+    "negative": "7::artist collaboration::, -1.5::low detail::,",
+    "characters": [],
+    "tags": [],
+    "date": "2026-07-09"
   }
 ]
