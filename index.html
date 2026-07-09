@@ -263,6 +263,20 @@
     word-break:break-word;
   }
   .card-meta .field-value.muted{ color:var(--text-muted); }
+  .copy-btn{
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    padding:4px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    margin-top:4px;
+    transition:background-color 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .copy-btn:hover{ border-color:var(--accent); color:var(--text); }
+  .copy-btn.copied{ background:var(--accent); border-color:var(--accent); color:#FFFFFF; }
   .card-meta .chips{
     display:flex; flex-wrap:wrap; gap:5px;
   }
@@ -274,35 +288,6 @@
     color:var(--text-muted);
     padding:2px 8px;
     border-radius:999px;
-  }
-  .chip-list{
-    display:flex;
-    flex-wrap:wrap;
-    gap:5px;
-    max-height:88px;
-    overflow-y:auto;
-    padding-right:2px;
-  }
-  .prompt-chip{
-    font-size:10.5px;
-    font-family:var(--font-mono);
-    background:var(--surface-2);
-    border:1px solid var(--border);
-    color:var(--text-muted);
-    padding:2px 8px;
-    border-radius:999px;
-    cursor:pointer;
-    transition:background-color 0.15s, color 0.15s, border-color 0.15s;
-  }
-  .prompt-chip:hover{
-    background:var(--accent-soft);
-    border-color:var(--accent);
-    color:var(--text);
-  }
-  .prompt-chip.copied{
-    background:var(--accent);
-    border-color:var(--accent);
-    color:#FFFFFF;
   }
 
   /* ---------- Empty state ---------- */
@@ -561,7 +546,7 @@
     </div>
 
     <div class="field type-group" data-group="style">
-      <label for="f-artists">Artists</label>
+      <label for="f-artists">Artist tags</label>
       <input type="text" id="f-artists" placeholder="artist:miyamoyan, artist:jp06, ...">
     </div>
 
@@ -745,11 +730,13 @@ function renderGallery(){
   });
 }
 
-function tagChipsHtml(str){
+function fieldWithCopy(label, str, extraClass){
   if(!str) return '';
-  return str.split(',').map(t=>t.trim()).filter(Boolean).map(t=>{
-    return `<span class="prompt-chip" data-copy="${escapeAttr(t)}" title="Click to copy">${escapeHtml(t)}</span>`;
-  }).join('');
+  return `<div>
+    <p class="field-label">${escapeHtml(label)}</p>
+    <p class="field-value${extraClass ? ' ' + extraClass : ''}">${escapeHtml(str)}</p>
+    <button type="button" class="copy-btn" data-copy="${escapeAttr(str)}">Copy</button>
+  </div>`;
 }
 
 function cardHtml(e){
@@ -759,9 +746,6 @@ function cardHtml(e){
   ).join('');
   const cx = e.cropX != null ? e.cropX : 50;
   const cy = e.cropY != null ? e.cropY : 50;
-  const artistChips = tagChipsHtml(e.artists);
-  const promptChips = tagChipsHtml(e.prompt);
-  const negativeChips = tagChipsHtml(e.negative);
   return `
   <article class="card">
     <div class="card-image-wrap">
@@ -778,10 +762,10 @@ function cardHtml(e){
       <span class="chev">▾</span>
     </button>
     <div class="card-meta hidden">
-      ${artistChips ? `<div><p class="field-label">artists</p><div class="chip-list">${artistChips}</div></div>` : ''}
-      ${promptChips ? `<div><p class="field-label">prompt</p><div class="chip-list">${promptChips}</div></div>` : ''}
+      ${fieldWithCopy('artist tags', e.artists, 'muted')}
+      ${fieldWithCopy('prompt', e.prompt)}
       ${characters ? `<div><p class="field-label">characters</p>${characters}</div>` : ''}
-      ${negativeChips ? `<div><p class="field-label">negative</p><div class="chip-list">${negativeChips}</div></div>` : ''}
+      ${fieldWithCopy('negative', e.negative, 'muted')}
       ${e.params ? `<div><p class="field-label">parameters</p><p class="field-value muted">${escapeHtml(e.params)}</p></div>` : ''}
       ${tags ? `<div class="chips">${tags}</div>` : ''}
     </div>
@@ -792,21 +776,6 @@ function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
 function escapeAttr(str){ return escapeHtml(str); }
-
-document.getElementById('gallery').addEventListener('click', (ev)=>{
-  const chip = ev.target.closest('.prompt-chip');
-  if(!chip) return;
-  const text = chip.dataset.copy;
-  navigator.clipboard.writeText(text).then(()=>{
-    const original = chip.textContent;
-    chip.classList.add('copied');
-    chip.textContent = 'Copied';
-    setTimeout(()=>{
-      chip.textContent = original;
-      chip.classList.remove('copied');
-    }, 900);
-  }).catch(()=> showToast('Could not copy to clipboard.', true));
-});
 
 /* ---------------- settings modal ---------------- */
 const settingsOverlay = document.getElementById('settings-overlay');
@@ -1189,6 +1158,21 @@ document.querySelectorAll('.type-tab').forEach(btn=>{
     document.querySelectorAll('.type-tab').forEach(b=> b.classList.toggle('active', b === btn));
     renderGallery();
   });
+});
+
+document.getElementById('gallery').addEventListener('click', (ev)=>{
+  const el = ev.target.closest('.copy-btn');
+  if(!el) return;
+  const text = el.dataset.copy;
+  navigator.clipboard.writeText(text).then(()=>{
+    const original = el.textContent;
+    el.classList.add('copied');
+    el.textContent = 'Copied';
+    setTimeout(()=>{
+      el.classList.remove('copied');
+      el.textContent = original;
+    }, 900);
+  }).catch(()=> showToast('Could not copy to clipboard.', true));
 });
 
 loadEntries();
