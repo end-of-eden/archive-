@@ -225,20 +225,15 @@
     border-radius:999px;
   }
 
-  .card-toggle{
-    display:flex; align-items:center; justify-content:space-between;
+  .card-number{
+    display:flex; align-items:center;
     padding:10px 14px;
-    background:none; border:none; border-top:1px solid var(--border-soft);
+    border-top:1px solid var(--border-soft);
     color:var(--text-muted);
     font-family:var(--font-mono);
     font-size:11px;
-    cursor:pointer;
-    width:100%;
-    text-align:left;
   }
-  .card-toggle .params{ color:var(--accent); }
-  .card-toggle .chev{ transition:transform 0.2s; flex-shrink:0; margin-left:8px; }
-  .card-toggle.collapsed .chev{ transform:rotate(-90deg); }
+  .card-number .params{ color:var(--accent); }
 
   .card-meta{
     padding:0 14px 14px;
@@ -734,13 +729,6 @@ function renderGallery(){
   }
   gallery.innerHTML = visible.map(cardHtml).join('');
 
-  gallery.querySelectorAll('.card-toggle').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const meta = btn.nextElementSibling;
-      meta.classList.toggle('hidden');
-      btn.classList.toggle('collapsed');
-    });
-  });
   gallery.querySelectorAll('.card-delete').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{
       ev.stopPropagation();
@@ -784,11 +772,10 @@ function cardHtml(e){
         <button class="card-icon-btn card-delete" data-id="${escapeAttr(e.id)}" aria-label="Delete">×</button>
       </div>
     </div>
-    <button class="card-toggle collapsed">
+    <div class="card-number">
       <span class="params">${escapeHtml(e.number || '')}</span>
-      <span class="chev">▾</span>
-    </button>
-    <div class="card-meta hidden">
+    </div>
+    <div class="card-meta">
       ${fieldWithCopy('artist tags', e.artists, 'muted')}
       ${fieldWithCopy('prompt', e.prompt)}
       ${characters ? `<div><p class="field-label">characters</p>${characters}</div>` : ''}
@@ -1120,9 +1107,9 @@ async function submitEntry(){
       if(isEdit){
         const idx = currentEntries.findIndex(en => en.id === id);
         if(idx >= 0) currentEntries[idx] = entryData;
-        else currentEntries.unshift(entryData);
+        else currentEntries.push(entryData);
       }else{
-        currentEntries.unshift(entryData);
+        currentEntries.push(entryData);
       }
 
       try{
