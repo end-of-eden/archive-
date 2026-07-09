@@ -13,5 +13,20 @@
     "characters": [],
     "tags": [],
     "date": "2026-07-09"
+  },
+  {
+    "id": "1783579613416-01y4l1",
+    "image": "images/1783579613416-01y4l1-1783579613416.png",
+    "cropX": 50,
+    "cropY": 50,
+    "type": "style",
+    "number": "001",
+    "params": "28 / 6 / 0.38",
+    "artists": "0.8::artist:m_m_pb::, 0.5::artist:dlckrpwjd111 ::, 0.6::artist:zhibuji loom::, artist:ratatatat74, 0.3::artist:wanke::, 0.5::artist:qiqu::,  artist:mery_(yangmalgage), novel illustration, best illustration, incredibly absurdres, masterpiece, best quality, amazing quality, very aesthetic, illustration, highres, highly detailed, ultra detailed, 4k, -3::simple illustration::, solo artist, -5::artist: collaboration::, year 2025, year 2024,",
+    "prompt": "",
+    "negative": "text, logo, watermark, too many watermarks, blank page, text-only page, reference, username, signature, artist:xinzoruo, artist:milkpanda, artist collaboration, artist:ebi_(shrimp_eleven), variant set, large variant set, 4koma, 2koma, toon (style), oekaki, chibi, turnaround, film grain, monochrome, dithering, halftone, screentones, dated, old, 1990s (style), mutation, deformed, distorted, disfigured, artistic error, distorted anatomy, anatomical structure error, asymmetrical face, unnatural hair, bad eyes, cloudy eyes, blank eyes, pointy ears, bad proportions, bad limb, bad hands, extra hands, bad hand structure, extra digits, fewer digits, bad legs, extra legs, amputee, distorted composition,bad perspective, multiple views, negative space, animation error, chromatic aberration, disorganized colors, scan artifacts, jpeg artifacts, vertical lines, vertical banding, worst quality, bad quality, lowres, blurry, upscaled, fewer details, unfinished, incomplete, amateur, cheesy, unsatisfactory, inadequate, deficient, subpar, poor, displeasing, very displeasing, bad illustration, bad portrait",
+    "characters": [],
+    "tags": [],
+    "date": "2026-07-09"
   }
 ]
