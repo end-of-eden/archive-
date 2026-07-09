@@ -28,5 +28,20 @@
     "characters": [],
     "tags": [],
     "date": "2026-07-09"
+  },
+  {
+    "id": "1783580853043-1ip0qy",
+    "image": "images/1783580853043-1ip0qy-1783580853043.png",
+    "cropX": 50,
+    "cropY": 50,
+    "type": "style",
+    "number": "003",
+    "params": "28 / 6 / 0.3",
+    "artists": "artist:miyamoyan, artist:jp06, artist:mgmg 1012, artist:m m pb, artist:z3zz4, artist:sqloveraven, 0.6::artist:wanke ::, artist:nemuke2828, 0.3::artist:kagoya1219 ::, year 2026, year 2025, year 2024, high detail, best quality, very aesthetic, -1::censored::, -3::artist collaboration::, -2::text::,",
+    "prompt": "",
+    "negative": "text, logo, watermark, too many watermarks, blank page, text-only page, reference, username, signature, artist:xinzoruo, artist:milkpanda, artist collaboration, artist:ebi_(shrimp_eleven), variant set, large variant set, 4koma, 2koma, toon (style), oekaki, chibi, turnaround, film grain, monochrome, dithering, halftone, screentones, dated, old, 1990s (style), mutation, deformed, distorted, disfigured, artistic error, distorted anatomy, anatomical structure error, asymmetrical face, unnatural hair, bad eyes, cloudy eyes, blank eyes, pointy ears, bad proportions, bad limb, bad hands, extra hands, bad hand structure, extra digits, fewer digits, bad legs, extra legs, amputee, distorted composition,bad perspective, multiple views, negative space, animation error, chromatic aberration, disorganized colors, scan artifacts, jpeg artifacts, vertical lines, vertical banding, worst quality, bad quality, lowres, blurry, upscaled, fewer details, unfinished, incomplete, amateur, cheesy, unsatisfactory, inadequate, deficient, subpar, poor, displeasing, very displeasing, bad illustration, bad portrait",
+    "characters": [],
+    "tags": [],
+    "date": "2026-07-09"
   }
 ]
