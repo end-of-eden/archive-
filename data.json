@@ -43,5 +43,20 @@
     "characters": [],
     "tags": [],
     "date": "2026-07-09"
+  },
+  {
+    "id": "1783582436814-bgamxt",
+    "image": "images/1783582436814-bgamxt-1783582436814.png",
+    "cropX": 50,
+    "cropY": 50,
+    "type": "style",
+    "number": "004",
+    "params": "28 / 6.7 / 0.5",
+    "artists": "game cg, -1::monochrome::, nib pen (medium), impressionism, high contrast, 1.3::artist:zero q 0q::, 0.6::airtist:remsrar::, 0.8::artist:akihare, artist:wanke, artist:duckchuni::, 1.1::artist:luxsumildo::, 0.6::artist:mery (yangmalgage)::, year 2026, year 2025, year 2024, high detail, best quality, very aesthetic, -1::censored::, -3::artist collaboration::, -2::text::,",
+    "prompt": "",
+    "negative": "2.0::facial hair, wrinkles::, lowres, bad anatomy, bad proportions, blurry, worst quality, bad quality, jpeg artifacts, very displeasing, film grain, scan artifacts, artistic error, chromatic aberration, dithering, halftone, screentone, multiple views, logo, watermark, too many watermarks, negative space, blank page, deformed, mutated, disfigured, missing limbs, extra limbs, extra fingers, fused fingers, bad hands, malformed hands, long neck, cloned face, asymmetrical eyes, cross-eyed, lazy eye, bad eyes, extra eyes, wrong head size, wrong body proportions, unrealistic proportions, distorted face, distorted body, poorly drawn face, poorly drawn hands, ugly, messy details, duplicate, text, captions, subtitles, signature, artist name, nail polish, glasses, earrings, alphes (style), zun (style), toriyama akira (style), fate (series), artist:kiadmo, artist:kitajima yuuki, artist:minami (colorful palette), artist:bkub, artist:bb (baalbuddy), artist:neocoill, artist:gaoo (frpjx283), artist:yukito (dreamrider), artist:konoshige (ryuun), artist:milkpanda, artist:nameo (judgemasterkou),blurry, furry, earring,",
+    "characters": [],
+    "tags": [],
+    "date": "2026-07-09"
   }
 ]
