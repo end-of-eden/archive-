@@ -285,18 +285,18 @@
     padding:6px 8px;
   }
   .copy-block::-webkit-scrollbar{
-    width:10px;
+    width:7px;
   }
   .copy-block::-webkit-scrollbar-thumb{
     background:#A6332B;
-    border-radius:10px;
+    border-radius:7px;
   }
   .copy-block::-webkit-scrollbar-track{
     background:rgba(166,51,43,.1);
   }
 
-  .copy-text{ transition:opacity 0.15s; }
-  .copy-wrap.copied .copy-text{ opacity:0.15; }
+  .copy-text{ display:inline-block; transition:filter 0.15s, opacity 0.15s; }
+  .copy-wrap.copied .copy-text{ filter:blur(4px); opacity:0.7; }
   .copy-feedback{
     position:absolute; inset:0;
     z-index:2;
