@@ -410,6 +410,21 @@
     display:flex;
     gap:8px;
     margin-bottom:8px;
+    align-items:center;
+  }
+  .character-row .char-label{
+    width:32px;
+    height:36px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-family:var(--font-mono);
+    font-size:13px;
+    color:var(--text-muted);
   }
   .character-row input{
     flex:1;
@@ -512,8 +527,8 @@
       </select>
     </div>
     <div class="field">
-      <label for="f-params">Parameters</label>
-      <input type="text" id="f-params" placeholder="28 / 6 / 0.3">
+      <label for="f-number">Number <span class="optional-hint">shown when collapsed</span></label>
+      <input type="text" id="f-number" placeholder="001">
     </div>
 
     <div class="field type-group" data-group="style">
@@ -535,6 +550,11 @@
     <div class="field">
       <label for="f-negative">Negative <span class="optional-hint">(optional)</span></label>
       <textarea id="f-negative" placeholder="text, logo, watermark, ..."></textarea>
+    </div>
+
+    <div class="field">
+      <label for="f-params">Parameters</label>
+      <input type="text" id="f-params" placeholder="28 / 6 / 0.3">
     </div>
 
     <div class="field">
@@ -714,15 +734,16 @@ function cardHtml(e){
         <button class="card-icon-btn card-delete" data-id="${escapeAttr(e.id)}" aria-label="Delete">×</button>
       </div>
     </div>
-    <button class="card-toggle">
-      <span class="params">${escapeHtml(e.params || '')}</span>
+    <button class="card-toggle collapsed">
+      <span class="params">${escapeHtml(e.number || '')}</span>
       <span class="chev">▾</span>
     </button>
-    <div class="card-meta">
+    <div class="card-meta hidden">
       ${e.artists ? `<div><p class="field-label">artists</p><p class="field-value muted">${escapeHtml(e.artists)}</p></div>` : ''}
       ${e.prompt ? `<div><p class="field-label">prompt</p><p class="field-value">${escapeHtml(e.prompt)}</p></div>` : ''}
       ${characters ? `<div><p class="field-label">characters</p>${characters}</div>` : ''}
       ${e.negative ? `<div><p class="field-label">negative</p><p class="field-value muted">${escapeHtml(e.negative)}</p></div>` : ''}
+      ${e.params ? `<div><p class="field-label">parameters</p><p class="field-value muted">${escapeHtml(e.params)}</p></div>` : ''}
       ${tags ? `<div class="chips">${tags}</div>` : ''}
     </div>
   </article>`;
@@ -825,16 +846,27 @@ function updateTypeGroups(){
   });
 }
 
-function addCharacterRow(name, outfit){
+function relabelCharacters(){
+  const rows = characterList.querySelectorAll('.character-row');
+  rows.forEach((row, i) => {
+    row.querySelector('.char-label').textContent = String.fromCharCode(65 + i);
+  });
+}
+
+function addCharacterRow(outfit){
   const row = document.createElement('div');
   row.className = 'character-row';
   row.innerHTML = `
-    <input type="text" class="char-name" placeholder="Character name" value="${escapeAttr(name||'')}">
+    <span class="char-label"></span>
     <input type="text" class="char-outfit" placeholder="Outfit" value="${escapeAttr(outfit||'')}">
     <button type="button" class="remove-character" aria-label="Remove character">×</button>
   `;
-  row.querySelector('.remove-character').addEventListener('click', ()=> row.remove());
+  row.querySelector('.remove-character').addEventListener('click', ()=>{
+    row.remove();
+    relabelCharacters();
+  });
   characterList.appendChild(row);
+  relabelCharacters();
 }
 
 document.getElementById('add-character-btn').addEventListener('click', ()=> addCharacterRow());
@@ -851,7 +883,7 @@ document.getElementById('preset-tags').querySelectorAll('.tag-chip').forEach(chi
 let editingId = null;
 
 function resetEntryForm(){
-  ['f-params','f-artists','f-prompt','f-negative'].forEach(id=> document.getElementById(id).value = '');
+  ['f-params','f-artists','f-prompt','f-negative','f-number'].forEach(id=> document.getElementById(id).value = '');
   document.getElementById('f-image').value = '';
   document.getElementById('f-image-hint').textContent = '';
   document.getElementById('f-type').value = (currentType === 'prompt') ? 'prompt' : 'style';
@@ -875,6 +907,7 @@ function openEditModal(id){
   editingId = id;
   document.getElementById('entry-modal-title').textContent = 'Edit piece';
   document.getElementById('f-params').value = entry.params || '';
+  document.getElementById('f-number').value = entry.number || '';
   document.getElementById('f-artists').value = entry.artists || '';
   document.getElementById('f-prompt').value = entry.prompt || '';
   document.getElementById('f-negative').value = entry.negative || '';
@@ -887,7 +920,7 @@ function openEditModal(id){
   });
   characterList.innerHTML = '';
   if(entry.characters && entry.characters.length){
-    entry.characters.forEach(c => addCharacterRow(c.name, c.outfit));
+    entry.characters.forEach(c => addCharacterRow(c.outfit));
   }else{
     addCharacterRow();
   }
@@ -949,7 +982,9 @@ async function ghPutFile(cfg, path, base64Content, message, sha){
   });
   if(!res.ok){
     const err = await res.json().catch(()=>({}));
-    throw new Error(err.message || `GitHub save failed (${res.status})`);
+    const e = new Error(err.message || `GitHub save failed (${res.status})`);
+    e.status = res.status;
+    throw e;
   }
   return res.json();
 }
@@ -999,19 +1034,11 @@ async function submitEntry(){
       imagePath = newImagePath;
     }
 
-    const current = await ghGetFile(cfg, 'data.json');
-    let currentEntries = [];
-    let sha = null;
-    if(current){
-      sha = current.sha;
-      currentEntries = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
-    }
-
     const type = document.getElementById('f-type').value;
     const characters = Array.from(characterList.querySelectorAll('.character-row')).map(row => ({
-      name: row.querySelector('.char-name').value.trim(),
+      name: row.querySelector('.char-label').textContent.trim(),
       outfit: row.querySelector('.char-outfit').value.trim()
-    })).filter(c => c.name || c.outfit);
+    })).filter(c => c.outfit);
 
     const entryData = {
       id,
@@ -1019,6 +1046,7 @@ async function submitEntry(){
       cropX,
       cropY,
       type,
+      number: document.getElementById('f-number').value.trim(),
       params: document.getElementById('f-params').value.trim(),
       artists: type === 'style' ? document.getElementById('f-artists').value.trim() : '',
       prompt: type === 'prompt' ? document.getElementById('f-prompt').value.trim() : '',
@@ -1028,16 +1056,34 @@ async function submitEntry(){
       date: isEdit ? (existingEntry.date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10)
     };
 
-    if(isEdit){
-      const idx = currentEntries.findIndex(en => en.id === id);
-      if(idx >= 0) currentEntries[idx] = entryData;
-      else currentEntries.unshift(entryData);
-    }else{
-      currentEntries.unshift(entryData);
-    }
+    const maxAttempts = 3;
+    let currentEntries = [];
+    for(let attempt = 1; attempt <= maxAttempts; attempt++){
+      const current = await ghGetFile(cfg, 'data.json');
+      let sha = null;
+      currentEntries = [];
+      if(current){
+        sha = current.sha;
+        currentEntries = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
+      }
 
-    const newContentB64 = b64EncodeUnicode(JSON.stringify(currentEntries, null, 2));
-    await ghPutFile(cfg, 'data.json', newContentB64, `${isEdit ? 'Update' : 'Add'} entry ${id}`, sha);
+      if(isEdit){
+        const idx = currentEntries.findIndex(en => en.id === id);
+        if(idx >= 0) currentEntries[idx] = entryData;
+        else currentEntries.unshift(entryData);
+      }else{
+        currentEntries.unshift(entryData);
+      }
+
+      try{
+        const newContentB64 = b64EncodeUnicode(JSON.stringify(currentEntries, null, 2));
+        await ghPutFile(cfg, 'data.json', newContentB64, `${isEdit ? 'Update' : 'Add'} entry ${id}`, sha);
+        break;
+      }catch(err){
+        if(err.status === 409 && attempt < maxAttempts) continue;
+        throw err;
+      }
+    }
 
     entries = currentEntries;
     renderTags();
