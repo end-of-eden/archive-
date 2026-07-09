@@ -273,9 +273,25 @@
   .copy-block::-webkit-scrollbar{ width:5px; }
   .copy-block::-webkit-scrollbar-track{ background:transparent; }
   .copy-block::-webkit-scrollbar-thumb{ background:#A6332B; border-radius:999px; }
-  .copy-block::-webkit-scrollbar-button{ display:none; height:0; width:0; }
-  .copy-block::-webkit-scrollbar-button:start:decrement,
-  .copy-block::-webkit-scrollbar-button:end:increment{ display:none; height:0; width:0; }
+  .copy-block::-webkit-scrollbar-button,
+  .copy-block::-webkit-scrollbar-button:start,
+  .copy-block::-webkit-scrollbar-button:end,
+  .copy-block::-webkit-scrollbar-button:increment,
+  .copy-block::-webkit-scrollbar-button:decrement,
+  .copy-block::-webkit-scrollbar-button:vertical:start:increment,
+  .copy-block::-webkit-scrollbar-button:vertical:start:decrement,
+  .copy-block::-webkit-scrollbar-button:vertical:end:increment,
+  .copy-block::-webkit-scrollbar-button:vertical:end:decrement,
+  .copy-block::-webkit-scrollbar-button:horizontal:start:increment,
+  .copy-block::-webkit-scrollbar-button:horizontal:start:decrement,
+  .copy-block::-webkit-scrollbar-button:horizontal:end:increment,
+  .copy-block::-webkit-scrollbar-button:horizontal:end:decrement{
+    display:none !important;
+    width:0 !important;
+    height:0 !important;
+    -webkit-appearance:none !important;
+  }
+  .copy-block::-webkit-scrollbar-corner{ background:transparent; }
   .copy-block:hover{ background:var(--surface-2); }
   .copy-block .copy-text{ transition:opacity 0.15s; }
   .copy-block.copied{ background:var(--surface-2); }
