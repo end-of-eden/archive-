@@ -269,49 +269,30 @@
   }
   .card-meta .field-value.muted{ color:var(--text-muted); }
   .copy-field{ cursor:pointer; }
-  .copy-block{
+  .copy-wrap{
     position:relative;
+    border-radius:6px;
+    margin:0 -8px;
+    transition:background-color 0.15s;
+  }
+  .copy-wrap:hover{ background:var(--surface-2); }
+  .copy-wrap.copied{ background:var(--surface-2); }
+  .copy-block{
     max-height:76px;
-    overflow-y:auto;
+    overflow-y:scroll;
     cursor:pointer;
     padding:6px 8px;
-    margin:0 -8px;
-    border-radius:6px;
-    transition:background-color 0.15s;
     scrollbar-width:thin;
     scrollbar-color:#A6332B transparent;
   }
-  .copy-block::-webkit-scrollbar{ width:5px; }
-  .copy-block::-webkit-scrollbar-track{ background:transparent; }
-  .copy-block::-webkit-scrollbar-thumb{ background:#A6332B; border-radius:999px; }
-  .copy-block::-webkit-scrollbar-button,
-  .copy-block::-webkit-scrollbar-button:start,
-  .copy-block::-webkit-scrollbar-button:end,
-  .copy-block::-webkit-scrollbar-button:increment,
-  .copy-block::-webkit-scrollbar-button:decrement,
-  .copy-block::-webkit-scrollbar-button:vertical:start:increment,
-  .copy-block::-webkit-scrollbar-button:vertical:start:decrement,
-  .copy-block::-webkit-scrollbar-button:vertical:end:increment,
-  .copy-block::-webkit-scrollbar-button:vertical:end:decrement,
-  .copy-block::-webkit-scrollbar-button:horizontal:start:increment,
-  .copy-block::-webkit-scrollbar-button:horizontal:start:decrement,
-  .copy-block::-webkit-scrollbar-button:horizontal:end:increment,
-  .copy-block::-webkit-scrollbar-button:horizontal:end:decrement{
-    display:none !important;
-    width:0 !important;
-    height:0 !important;
-    -webkit-appearance:none !important;
-  }
-  .copy-block::-webkit-scrollbar-corner{ background:transparent; }
+  .copy-block::-webkit-scrollbar{ width:6px; }
+  .copy-block::-webkit-scrollbar-track{ background-color:transparent; }
+  .copy-block::-webkit-scrollbar-thumb{ border-radius:3px; background-color:#A6332B; }
+  .copy-block::-webkit-scrollbar-button{ width:0; height:0; }
 
-  /* 크롬, 엣지, 사파리 브라우저 */
-  ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
-
-  .copy-block:hover{ background:var(--surface-2); }
-  .copy-block .copy-text{ transition:opacity 0.15s; }
-  .copy-block.copied{ background:var(--surface-2); }
-  .copy-block.copied .copy-text{ opacity:0.15; }
-  .copy-block .copy-feedback{
+  .copy-text{ transition:opacity 0.15s; }
+  .copy-wrap.copied .copy-text{ opacity:0.15; }
+  .copy-feedback{
     position:absolute; inset:0;
     z-index:2;
     display:flex; align-items:center; justify-content:center;
@@ -327,7 +308,7 @@
     transition:opacity 0.15s;
     border-radius:6px;
   }
-  .copy-block.copied .copy-feedback{ opacity:1; }
+  .copy-wrap.copied .copy-feedback{ opacity:1; }
   .card-meta .chips{
     display:flex; flex-wrap:wrap; gap:5px;
   }
@@ -541,13 +522,15 @@
   .cursor-heart{
     position:fixed;
     pointer-events:none;
-    font-size:13px;
+    width:17px;
+    height:17px;
     z-index:9999;
     left:0; top:0;
     transform:translate(-50%,-50%);
     animation:cursor-heart-float 900ms ease-out forwards;
     will-change:transform, opacity;
   }
+  .cursor-heart svg{ width:100%; height:100%; display:block; }
   @keyframes cursor-heart-float{
     0%{ transform:translate(-50%,-50%) scale(0.6); opacity:0.9; }
     100%{ transform:translate(-50%,-160%) scale(1.05); opacity:0; }
@@ -802,10 +785,12 @@ function fieldWithCopy(label, str, extraClass){
   if(!str) return '';
   return `<div class="copy-field">
     <p class="field-label">${escapeHtml(label)}</p>
-    <p class="field-value copy-block${extraClass ? ' ' + extraClass : ''}" data-copy="${escapeAttr(str)}" title="Click to copy">
-      <span class="copy-text">${escapeHtml(str)}</span>
+    <div class="copy-wrap" data-copy="${escapeAttr(str)}" title="Click to copy">
+      <div class="field-value copy-block${extraClass ? ' ' + extraClass : ''}">
+        <span class="copy-text">${escapeHtml(str)}</span>
+      </div>
       <span class="copy-feedback">Copied</span>
-    </p>
+    </div>
   </div>`;
 }
 
@@ -1233,9 +1218,9 @@ document.getElementById('secret-password').addEventListener('keydown', (ev)=>{
 });
 
 document.getElementById('gallery').addEventListener('click', (ev)=>{
-  const wrapper = ev.target.closest('.copy-field');
-  if(!wrapper) return;
-  const el = wrapper.querySelector('.copy-block');
+  const fieldWrap = ev.target.closest('.copy-field');
+  if(!fieldWrap) return;
+  const el = fieldWrap.querySelector('.copy-wrap');
   if(!el) return;
   const text = el.dataset.copy;
   navigator.clipboard.writeText(text).then(()=>{
@@ -1250,6 +1235,7 @@ loadEntries();
 if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
   const HEART_COLORS = ['#A6332B', '#C9A227'];
   const SPAWN_INTERVAL_MS = 90; // lower = more frequent hearts
+  const HEART_SVG = '<svg viewBox="0 0 32 29" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M23.6 0c-3.4 0-6.3 2-7.6 4.9C14.7 2 11.8 0 8.4 0 3.8 0 0 3.8 0 8.4c0 9.3 15.3 17.6 15.9 17.9.2.1.4.2.6.2s.4-.1.6-.2c.6-.3 15.9-8.6 15.9-17.9C33 3.8 29.2 0 24.6 0z" fill="currentColor"/></svg>';
   let lastHeartSpawn = 0;
 
   document.addEventListener('mousemove', (ev)=>{
@@ -1259,7 +1245,7 @@ if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
 
     const heart = document.createElement('span');
     heart.className = 'cursor-heart';
-    heart.textContent = '♥';
+    heart.innerHTML = HEART_SVG;
     heart.style.left = (ev.clientX + (Math.random()*10 - 5)) + 'px';
     heart.style.top = (ev.clientY + (Math.random()*10 - 5)) + 'px';
     heart.style.color = HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)];
