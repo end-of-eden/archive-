@@ -103,5 +103,20 @@
     "characters": [],
     "tags": [],
     "date": "2026-07-09"
+  },
+  {
+    "id": "1783582661458-l1sc28",
+    "image": "images/1783582661458-l1sc28-1783582661458.png",
+    "cropX": 50,
+    "cropY": 50,
+    "type": "style",
+    "number": "008",
+    "params": "28 / 7 / 0.34",
+    "artists": "tanemura arina, wanke, 1.5::koge donbo::, pluspod, ,3::ink (medium), watercolor (medium):: , year 2024, year 2025, location, best illumination, best shadow, 8k image, 8k wallpaper, very aesthetic, highres, sharp highlight, best quality, amazing quality, very beautiful, absurd, masterpiece, very aesthetic, absurdres, animated, dynamic,",
+    "prompt": "",
+    "negative": "artist:xinzoruo, artist:milkpanda, artist:bkub, normal quality, bad quality, low quality, worst quality, deformed, watermark, username, blurry, artist name, sign, bad face, artist collaboration",
+    "characters": [],
+    "tags": [],
+    "date": "2026-07-09"
   }
 ]
