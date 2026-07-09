@@ -73,5 +73,20 @@
     "characters": [],
     "tags": [],
     "date": "2026-07-09"
+  },
+  {
+    "id": "1783582561447-8503ff",
+    "image": "images/1783582561447-8503ff-1783582561447.png",
+    "cropX": 50,
+    "cropY": 50,
+    "type": "style",
+    "number": "006",
+    "params": "28 / 7 / 0.34 _Guidance값이 높아야 잘 나와요",
+    "artists": "artist:akiyama enma, artist:kazari tayu, 2::marutiyo::, 1.5::artist:itefu::, 2.5::anime coloring, cel shading::, year 2024, year 2025, location, best illumination, best shadow, 8k image, 8k wallpaper, very aesthetic, highres, sharp highlight, best quality, amazing quality, very beautiful, absurd, masterpiece, very aesthetic, absurdres, animated, dynamic, -3:: blunt bangs, loli::, 3:: upper body::,",
+    "prompt": "",
+    "negative": "artist:xinzoruo, artist:milkpanda, artist:bkub, normal quality, bad quality, low quality, worst quality, deformed, watermark, username, blurry, artist name, sign, bad face, artist collaboration",
+    "characters": [],
+    "tags": [],
+    "date": "2026-07-09"
   }
 ]
