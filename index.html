@@ -181,21 +181,39 @@
   .card-image-wrap img{
     width:100%; height:100%; object-fit:cover; display:block;
   }
-  .card-delete{
+  .card-image-wrap.img-error img{ display:none; }
+  .img-error-fallback{
+    display:none;
+    position:absolute; inset:0;
+    align-items:center; justify-content:center;
+    text-align:center;
+    padding:16px;
+    font-size:12px;
+    color:var(--text-faint);
+    background:var(--surface-2);
+  }
+  .card-image-wrap.img-error .img-error-fallback{ display:flex; }
+  .card-actions{
     position:absolute; top:8px; right:8px;
+    display:flex;
+    gap:6px;
+    opacity:0;
+    transition:opacity 0.15s;
+  }
+  .card:hover .card-actions{ opacity:1; }
+  .card-icon-btn{
     width:26px; height:26px;
     border-radius:50%;
     background:rgba(15,14,23,0.75);
     border:1px solid var(--border);
-    color:var(--text-muted);
+    color:#FFFFFF;
     display:flex; align-items:center; justify-content:center;
     cursor:pointer;
-    font-size:14px;
-    opacity:0;
-    transition:opacity 0.15s, color 0.15s;
+    font-size:13px;
+    transition:color 0.15s, border-color 0.15s;
   }
-  .card:hover .card-delete{ opacity:1; }
-  .card-delete:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+  .card-icon-btn:hover{ color:var(--accent); border-color:var(--accent); }
+  .card-icon-btn.card-delete:hover{ color:var(--accent-2); border-color:var(--accent-2); }
   .type-badge{
     position:absolute; top:8px; left:8px;
     background:rgba(15,14,23,0.75);
@@ -362,6 +380,39 @@
   .btn-primary:hover{ opacity:0.9; border-color:var(--accent); }
   .btn-primary:disabled{ opacity:0.5; cursor:not-allowed; }
   .hint{ font-size:11.5px; color:var(--text-faint); margin-top:6px; line-height:1.5; }
+  .type-group.hidden{ display:none; }
+  .optional-hint{ text-transform:none; letter-spacing:0; color:var(--text-faint); font-size:11px; }
+  .character-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .character-row input{
+    flex:1;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    padding:10px 12px;
+    font-size:13.5px;
+    font-family:var(--font-body);
+  }
+  .character-row .remove-character{
+    background:none;
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text-muted);
+    width:36px;
+    flex-shrink:0;
+    cursor:pointer;
+    font-size:16px;
+  }
+  .character-row .remove-character:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+  .preset-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
 
   /* ---------- Toast ---------- */
   .toast{
@@ -416,10 +467,10 @@
 <!-- Entry modal -->
 <div class="overlay" id="entry-overlay">
   <div class="modal">
-    <h2>Add new piece</h2>
+    <h2 id="entry-modal-title">Add new piece</h2>
     <p class="modal-sub">Commits the image and prompt straight to your repository.</p>
     <div class="field">
-      <label for="f-image">Image</label>
+      <label for="f-image">Image <span class="optional-hint" id="f-image-hint"></span></label>
       <input type="file" id="f-image" accept="image/*">
     </div>
     <div class="field">
@@ -429,32 +480,43 @@
         <option value="prompt">Prompt</option>
       </select>
     </div>
-    <div class="field-row">
-      <div class="field">
-        <label for="f-params">Parameters</label>
-        <input type="text" id="f-params" placeholder="28 / 6 / 0.3">
-      </div>
-      <div class="field">
-        <label for="f-character">Character</label>
-        <input type="text" id="f-character" placeholder="Eden">
-      </div>
-    </div>
     <div class="field">
+      <label for="f-params">Parameters</label>
+      <input type="text" id="f-params" placeholder="28 / 6 / 0.3">
+    </div>
+
+    <div class="field type-group" data-group="style">
       <label for="f-artists">Artists</label>
       <input type="text" id="f-artists" placeholder="artist:miyamoyan, artist:jp06, ...">
     </div>
-    <div class="field">
+
+    <div class="field type-group" data-group="prompt">
       <label for="f-prompt">Prompt</label>
       <textarea id="f-prompt" placeholder="couple, hetero, 1girl, 1boy, ..."></textarea>
     </div>
+
+    <div class="field type-group" data-group="prompt">
+      <label>Characters</label>
+      <div id="character-list"></div>
+      <button type="button" class="btn" id="add-character-btn">+ Add character</button>
+    </div>
+
     <div class="field">
-      <label for="f-negative">Negative</label>
+      <label for="f-negative">Negative <span class="optional-hint">(optional)</span></label>
       <textarea id="f-negative" placeholder="text, logo, watermark, ..."></textarea>
     </div>
+
     <div class="field">
-      <label for="f-tags">Tags (comma separated)</label>
-      <input type="text" id="f-tags" placeholder="couple, eoe, portrait">
+      <label>Tags</label>
+      <div class="preset-tags" id="preset-tags">
+        <button type="button" class="tag-chip" data-tag="background">Background</button>
+        <button type="button" class="tag-chip" data-tag="composition">Composition</button>
+        <button type="button" class="tag-chip" data-tag="pose">Pose</button>
+        <button type="button" class="tag-chip" data-tag="outfit">Outfit</button>
+        <button type="button" class="tag-chip" data-tag="expression">Expression</button>
+      </div>
     </div>
+
     <div class="modal-actions">
       <button class="btn" id="entry-cancel">Cancel</button>
       <button class="btn btn-primary" id="entry-submit">Save</button>
@@ -595,16 +657,29 @@ function renderGallery(){
       deleteEntry(btn.dataset.id);
     });
   });
+  gallery.querySelectorAll('.card-edit').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      openEditModal(btn.dataset.id);
+    });
+  });
 }
 
 function cardHtml(e){
   const tags = (e.tags||[]).map(t=>`<span class="mini-chip">${escapeHtml(t)}</span>`).join('');
+  const characters = (e.characters||[]).map(c =>
+    `<p class="field-value">${escapeHtml(c.name || '')}${c.outfit ? ` — ${escapeHtml(c.outfit)}` : ''}</p>`
+  ).join('');
   return `
   <article class="card">
     <div class="card-image-wrap">
-      <img src="${escapeAttr(e.image)}" alt="${escapeAttr(e.character || 'saved artwork')}" loading="lazy">
+      <img src="${escapeAttr(e.image)}" alt="saved artwork" loading="lazy" onerror="this.parentElement.classList.add('img-error')">
+      <div class="img-error-fallback">Image not available yet</div>
       ${e.type ? `<span class="type-badge">${escapeHtml(e.type)}</span>` : ''}
-      <button class="card-delete" data-id="${escapeAttr(e.id)}" aria-label="Delete">×</button>
+      <div class="card-actions">
+        <button class="card-icon-btn card-edit" data-id="${escapeAttr(e.id)}" aria-label="Edit">✎</button>
+        <button class="card-icon-btn card-delete" data-id="${escapeAttr(e.id)}" aria-label="Delete">×</button>
+      </div>
     </div>
     <button class="card-toggle">
       <span class="params">${escapeHtml(e.params || '')}</span>
@@ -613,6 +688,7 @@ function cardHtml(e){
     <div class="card-meta">
       ${e.artists ? `<div><p class="field-label">artists</p><p class="field-value muted">${escapeHtml(e.artists)}</p></div>` : ''}
       ${e.prompt ? `<div><p class="field-label">prompt</p><p class="field-value">${escapeHtml(e.prompt)}</p></div>` : ''}
+      ${characters ? `<div><p class="field-label">characters</p>${characters}</div>` : ''}
       ${e.negative ? `<div><p class="field-label">negative</p><p class="field-value muted">${escapeHtml(e.negative)}</p></div>` : ''}
       ${tags ? `<div class="chips">${tags}</div>` : ''}
     </div>
@@ -653,15 +729,93 @@ document.getElementById('settings-save').addEventListener('click', ()=>{
 
 /* ---------------- entry modal ---------------- */
 const entryOverlay = document.getElementById('entry-overlay');
+const characterList = document.getElementById('character-list');
+let selectedTags = new Set();
+
+function updateTypeGroups(){
+  const type = document.getElementById('f-type').value;
+  document.querySelectorAll('.type-group').forEach(el=>{
+    el.classList.toggle('hidden', el.dataset.group !== type);
+  });
+}
+
+function addCharacterRow(name, outfit){
+  const row = document.createElement('div');
+  row.className = 'character-row';
+  row.innerHTML = `
+    <input type="text" class="char-name" placeholder="Character name" value="${escapeAttr(name||'')}">
+    <input type="text" class="char-outfit" placeholder="Outfit" value="${escapeAttr(outfit||'')}">
+    <button type="button" class="remove-character" aria-label="Remove character">×</button>
+  `;
+  row.querySelector('.remove-character').addEventListener('click', ()=> row.remove());
+  characterList.appendChild(row);
+}
+
+document.getElementById('add-character-btn').addEventListener('click', ()=> addCharacterRow());
+document.getElementById('f-type').addEventListener('change', updateTypeGroups);
+
+document.getElementById('preset-tags').querySelectorAll('.tag-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const tag = chip.dataset.tag;
+    if(selectedTags.has(tag)){ selectedTags.delete(tag); chip.classList.remove('active'); }
+    else{ selectedTags.add(tag); chip.classList.add('active'); }
+  });
+});
+
+let editingId = null;
+
+function resetEntryForm(){
+  ['f-params','f-artists','f-prompt','f-negative'].forEach(id=> document.getElementById(id).value = '');
+  document.getElementById('f-image').value = '';
+  document.getElementById('f-image-hint').textContent = '';
+  document.getElementById('f-type').value = (currentType === 'prompt') ? 'prompt' : 'style';
+  selectedTags.clear();
+  document.getElementById('preset-tags').querySelectorAll('.tag-chip').forEach(c=> c.classList.remove('active'));
+  characterList.innerHTML = '';
+  addCharacterRow();
+  updateTypeGroups();
+}
+
+function openEditModal(id){
+  if(!hasConfig()){
+    showToast('Set up your repository in ⚙ first.', true);
+    settingsOverlay.classList.add('open');
+    return;
+  }
+  const entry = entries.find(en => en.id === id);
+  if(!entry) return;
+  editingId = id;
+  document.getElementById('entry-modal-title').textContent = 'Edit piece';
+  document.getElementById('f-params').value = entry.params || '';
+  document.getElementById('f-artists').value = entry.artists || '';
+  document.getElementById('f-prompt').value = entry.prompt || '';
+  document.getElementById('f-negative').value = entry.negative || '';
+  document.getElementById('f-type').value = entry.type || 'style';
+  document.getElementById('f-image').value = '';
+  document.getElementById('f-image-hint').textContent = '(leave empty to keep current image)';
+  selectedTags = new Set(entry.tags || []);
+  document.getElementById('preset-tags').querySelectorAll('.tag-chip').forEach(c=>{
+    c.classList.toggle('active', selectedTags.has(c.dataset.tag));
+  });
+  characterList.innerHTML = '';
+  if(entry.characters && entry.characters.length){
+    entry.characters.forEach(c => addCharacterRow(c.name, c.outfit));
+  }else{
+    addCharacterRow();
+  }
+  updateTypeGroups();
+  entryOverlay.classList.add('open');
+}
+
 document.getElementById('add-fab').addEventListener('click', ()=>{
   if(!hasConfig()){
     showToast('Set up your repository in ⚙ first.', true);
     settingsOverlay.classList.add('open');
     return;
   }
-  ['f-params','f-character','f-artists','f-prompt','f-negative','f-tags'].forEach(id=> document.getElementById(id).value = '');
-  document.getElementById('f-image').value = '';
-  document.getElementById('f-type').value = (currentType === 'prompt') ? 'prompt' : 'style';
+  editingId = null;
+  document.getElementById('entry-modal-title').textContent = 'Add new piece';
+  resetEntryForm();
   entryOverlay.classList.add('open');
 });
 document.getElementById('entry-cancel').addEventListener('click', ()=> entryOverlay.classList.remove('open'));
@@ -730,19 +884,29 @@ async function submitEntry(){
   const cfg = getConfig();
   const fileInput = document.getElementById('f-image');
   const file = fileInput.files[0];
-  if(!file){ showToast('Choose an image first.', true); return; }
+  const isEdit = !!editingId;
+  if(!file && !isEdit){ showToast('Choose an image first.', true); return; }
 
   const submitBtn = document.getElementById('entry-submit');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Saving...';
 
   try{
-    const ext = file.name.split('.').pop().toLowerCase();
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    const imagePath = `images/${id}.${ext}`;
-    const base64Image = await fileToBase64(file);
+    const existingEntry = isEdit ? entries.find(en => en.id === editingId) : null;
+    const id = isEdit ? editingId : `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    let imagePath = isEdit ? existingEntry.image : null;
 
-    await ghPutFile(cfg, imagePath, base64Image, `Add image ${id}`, null);
+    if(file){
+      const ext = file.name.split('.').pop().toLowerCase();
+      const newImagePath = `images/${id}-${Date.now()}.${ext}`;
+      const base64Image = await fileToBase64(file);
+      await ghPutFile(cfg, newImagePath, base64Image, `${isEdit ? 'Update' : 'Add'} image ${id}`, null);
+      if(isEdit && existingEntry.image){
+        const oldImg = await ghGetFile(cfg, existingEntry.image);
+        if(oldImg) await ghDeleteFile(cfg, existingEntry.image, `Remove old image ${id}`, oldImg.sha);
+      }
+      imagePath = newImagePath;
+    }
 
     const current = await ghGetFile(cfg, 'data.json');
     let currentEntries = [];
@@ -752,28 +916,41 @@ async function submitEntry(){
       currentEntries = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
     }
 
-    const tagsRaw = document.getElementById('f-tags').value;
-    const newEntry = {
+    const type = document.getElementById('f-type').value;
+    const characters = Array.from(characterList.querySelectorAll('.character-row')).map(row => ({
+      name: row.querySelector('.char-name').value.trim(),
+      outfit: row.querySelector('.char-outfit').value.trim()
+    })).filter(c => c.name || c.outfit);
+
+    const entryData = {
       id,
       image: imagePath,
-      type: document.getElementById('f-type').value,
+      type,
       params: document.getElementById('f-params').value.trim(),
-      character: document.getElementById('f-character').value.trim(),
-      artists: document.getElementById('f-artists').value.trim(),
-      prompt: document.getElementById('f-prompt').value.trim(),
+      artists: type === 'style' ? document.getElementById('f-artists').value.trim() : '',
+      prompt: type === 'prompt' ? document.getElementById('f-prompt').value.trim() : '',
       negative: document.getElementById('f-negative').value.trim(),
-      tags: tagsRaw.split(',').map(t=>t.trim()).filter(Boolean),
-      date: new Date().toISOString().slice(0,10)
+      characters: type === 'prompt' ? characters : [],
+      tags: Array.from(selectedTags),
+      date: isEdit ? (existingEntry.date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10)
     };
-    currentEntries.unshift(newEntry);
+
+    if(isEdit){
+      const idx = currentEntries.findIndex(en => en.id === id);
+      if(idx >= 0) currentEntries[idx] = entryData;
+      else currentEntries.unshift(entryData);
+    }else{
+      currentEntries.unshift(entryData);
+    }
 
     const newContentB64 = b64EncodeUnicode(JSON.stringify(currentEntries, null, 2));
-    await ghPutFile(cfg, 'data.json', newContentB64, `Add entry ${id}`, sha);
+    await ghPutFile(cfg, 'data.json', newContentB64, `${isEdit ? 'Update' : 'Add'} entry ${id}`, sha);
 
     entries = currentEntries;
     renderTags();
     renderGallery();
     entryOverlay.classList.remove('open');
+    editingId = null;
     showToast('Saved. Give GitHub Pages a minute to catch up.');
   }catch(err){
     showToast(err.message || 'Save failed.', true);
