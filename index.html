@@ -41,20 +41,6 @@
   button{ font-family:inherit; }
   :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 
-  html{
-    scrollbar-color:#A6332B transparent;
-  }
-  html::-webkit-scrollbar{
-    width:10px;
-  }
-  html::-webkit-scrollbar-thumb{
-    background:#A6332B;
-    border-radius:10px;
-  }
-  html::-webkit-scrollbar-track{
-    background:rgba(166,51,43,.1);
-  }
-
   /* ---------- Header ---------- */
   header.hero{
     position:relative;
@@ -335,14 +321,18 @@
     padding:6px 8px;
   }
   .copy-block::-webkit-scrollbar{
-    width:7px;
-  }
-  .copy-block::-webkit-scrollbar-thumb{
-    background:#A6332B;
-    border-radius:7px;
+    width:6px;
   }
   .copy-block::-webkit-scrollbar-track{
-    background:rgba(166,51,43,.1);
+    background-color:transparent;
+  }
+  .copy-block::-webkit-scrollbar-thumb{
+    border-radius:3px;
+    background-color:#A6332B;
+  }
+  .copy-block::-webkit-scrollbar-button{
+    width:0;
+    height:0;
   }
 
   .copy-text{ display:inline-block; transition:filter 0.15s, opacity 0.15s; }
