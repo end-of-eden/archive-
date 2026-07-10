@@ -44,14 +44,14 @@
   html{
     scrollbar-color:#A6332B transparent;
   }
-  ::-webkit-scrollbar{
+  html::-webkit-scrollbar{
     width:10px;
   }
-  ::-webkit-scrollbar-thumb{
+  html::-webkit-scrollbar-thumb{
     background:#A6332B;
     border-radius:10px;
   }
-  ::-webkit-scrollbar-track{
+  html::-webkit-scrollbar-track{
     background:rgba(166,51,43,.1);
   }
 
@@ -380,6 +380,14 @@
     margin:0 0 8px;
   }
   .empty-state p{ font-size:14px; margin:0; }
+  .loading-state p{
+    font-family:var(--font-mono);
+    animation:loading-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes loading-pulse{
+    0%, 100%{ opacity:0.4; }
+    50%{ opacity:1; }
+  }
 
   /* ---------- Modal ---------- */
   .overlay{
@@ -734,6 +742,18 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
+<!-- Confirm modal -->
+<div class="overlay" id="confirm-overlay">
+  <div class="modal">
+    <h2 id="confirm-title">Are you sure?</h2>
+    <p class="modal-sub" id="confirm-message"></p>
+    <div class="modal-actions">
+      <button class="btn" id="confirm-cancel">Cancel</button>
+      <button class="btn btn-primary" id="confirm-ok">Continue</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -760,6 +780,30 @@ function showToast(msg, isError){
   showToast._timer = setTimeout(()=>{ t.className = 'toast'; }, 3600);
 }
 
+function confirmDialog(title, message, okText){
+  return new Promise((resolve)=>{
+    const overlay = document.getElementById('confirm-overlay');
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-message').textContent = message;
+    const okBtn = document.getElementById('confirm-ok');
+    const cancelBtn = document.getElementById('confirm-cancel');
+    okBtn.textContent = okText || 'Continue';
+
+    function cleanup(result){
+      overlay.classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.classList.add('open');
+  });
+}
+
 /* ---------------- data load & render ---------------- */
 function rowToEntry(row){
   return {
@@ -781,6 +825,9 @@ function rowToEntry(row){
 }
 
 async function loadEntries(){
+  document.getElementById('gallery').innerHTML = `<div class="empty-state loading-state">
+    <p>Loading...</p>
+  </div>`;
   try{
     const res = await fetch(`${SUPABASE_URL}/rest/v1/entries?select=*&order=number.asc,created_at.asc`, {
       headers: sbHeaders()
@@ -1114,6 +1161,24 @@ async function submitEntry(){
   const isEdit = !!editingId;
   if(!file && !isEdit){ showToast('Choose an image first.', true); return; }
 
+  const type = document.getElementById('f-type').value;
+  const numberValue = document.getElementById('f-number').value.trim();
+  if(numberValue){
+    const usesCategory = (type === 'prompt' || type === 'secret');
+    const dupe = entries.some(en => {
+      if(en.id === editingId) return false;
+      if(en.type !== type) return false;
+      if((en.number || '').trim() !== numberValue) return false;
+      if(usesCategory) return (en.category || '') === selectedCategory;
+      return true;
+    });
+    if(dupe){
+      const scopeLabel = usesCategory ? (selectedCategory || 'ALL') : type;
+      showToast(`"${numberValue}" is already used in ${scopeLabel}. Choose a different number.`, true);
+      return;
+    }
+  }
+
   const submitBtn = document.getElementById('entry-submit');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Saving...';
@@ -1131,7 +1196,6 @@ async function submitEntry(){
       if(oldImagePath) await sbDeleteImage(oldImagePath);
     }
 
-    const type = document.getElementById('f-type').value;
     const characters = Array.from(characterList.querySelectorAll('.character-row')).map(row => ({
       name: row.querySelector('.char-label').textContent.trim(),
       outfit: row.querySelector('.char-outfit').value.trim()
@@ -1143,7 +1207,7 @@ async function submitEntry(){
       cropX,
       cropY,
       type,
-      number: document.getElementById('f-number').value.trim(),
+      number: numberValue,
       params: document.getElementById('f-params').value.trim(),
       artists: (type === 'style' || type === 'outfit') ? document.getElementById('f-artists').value.trim() : '',
       category: (type === 'prompt' || type === 'secret') ? selectedCategory : '',
@@ -1192,7 +1256,8 @@ async function submitEntry(){
 
 function deleteEntry(id){
   requireUnlock(async ()=>{
-    if(!confirm("Delete this piece? This can't be undone.")) return;
+    const proceed = await confirmDialog('Delete this piece?', "This can't be undone.", 'Delete');
+    if(!proceed) return;
     const entry = entries.find(e => e.id === id);
     if(!entry) return;
 
