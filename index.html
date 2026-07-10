@@ -160,17 +160,38 @@
     border-color:var(--accent);
     color:var(--accent);
   }
-  .category-select{
-    margin-top:10px;
+  .type-tab-dropdown-wrap{
+    position:relative;
+  }
+  .prompt-dropdown{
+    position:absolute;
+    top:100%; left:0;
+    margin-top:4px;
     background:var(--surface);
     border:1px solid var(--border);
     border-radius:8px;
-    color:var(--text);
-    padding:6px 10px;
-    font-size:12px;
-    font-family:var(--font-mono);
-    cursor:pointer;
+    box-shadow:0 8px 20px rgba(0,0,0,0.12);
+    padding:6px;
+    display:none;
+    flex-direction:column;
+    min-width:140px;
+    z-index:30;
   }
+  .prompt-dropdown.open{ display:flex; }
+  .prompt-dropdown-item{
+    background:none;
+    border:none;
+    text-align:left;
+    padding:8px 10px;
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    color:var(--text-muted);
+    border-radius:6px;
+    cursor:pointer;
+    transition:background-color 0.15s, color 0.15s;
+  }
+  .prompt-dropdown-item:hover{ background:var(--surface-2); color:var(--text); }
+  .prompt-dropdown-item.active{ color:var(--accent); font-weight:500; }
 
   /* ---------- Gallery ---------- */
   main{
@@ -587,16 +608,18 @@
 <div class="controls">
   <div class="type-tabs" id="type-tabs">
     <button class="type-tab active" data-type="style">Style</button>
-    <button class="type-tab" data-type="prompt">Prompt</button>
+    <div class="type-tab-dropdown-wrap">
+      <button class="type-tab" data-type="prompt" id="prompt-tab">Prompt</button>
+      <div class="prompt-dropdown" id="prompt-dropdown">
+        <button type="button" class="prompt-dropdown-item active" data-category="all">All categories</button>
+        <button type="button" class="prompt-dropdown-item" data-category="GIRL">GIRL</button>
+        <button type="button" class="prompt-dropdown-item" data-category="BOY">BOY</button>
+        <button type="button" class="prompt-dropdown-item" data-category="DUO">DUO</button>
+      </div>
+    </div>
     <button class="type-tab" data-type="outfit">Outfit</button>
     <button class="secret-btn" id="secret-btn" title="???" aria-label="Secret">(^╷ ̫ ╷^)ﾉ❤︎</button>
   </div>
-  <select id="category-filter" class="category-select" style="display:none;">
-    <option value="all">All categories</option>
-    <option value="GIRL">GIRL</option>
-    <option value="BOY">BOY</option>
-    <option value="DUO">DUO</option>
-  </select>
 </div>
 
 <main>
@@ -1170,26 +1193,55 @@ function deleteEntry(id){
 }
 
 /* ---------------- type tabs ---------------- */
-function updateCategoryFilterVisibility(){
-  const select = document.getElementById('category-filter');
-  select.style.display = (currentType === 'prompt') ? 'inline-block' : 'none';
+const promptDropdown = document.getElementById('prompt-dropdown');
+
+function resetCategoryFilter(){
+  currentCategoryFilter = 'all';
+  promptDropdown.querySelectorAll('.prompt-dropdown-item').forEach(item=>{
+    item.classList.toggle('active', item.dataset.category === 'all');
+  });
+}
+
+function closePromptDropdown(){
+  promptDropdown.classList.remove('open');
 }
 
 document.querySelectorAll('.type-tab').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
+  btn.addEventListener('click', (ev)=>{
+    const isPromptTab = btn.dataset.type === 'prompt';
+    const alreadyOnPrompt = currentType === 'prompt';
+
     currentType = btn.dataset.type;
-    currentCategoryFilter = 'all';
-    document.getElementById('category-filter').value = 'all';
+    resetCategoryFilter();
     document.querySelectorAll('.type-tab').forEach(b=> b.classList.toggle('active', b === btn));
     document.getElementById('secret-btn').classList.remove('secret-active');
-    updateCategoryFilterVisibility();
+
+    if(isPromptTab){
+      ev.stopPropagation();
+      if(alreadyOnPrompt){
+        promptDropdown.classList.toggle('open');
+      }else{
+        promptDropdown.classList.add('open');
+      }
+    }else{
+      closePromptDropdown();
+    }
     renderGallery();
   });
 });
 
-document.getElementById('category-filter').addEventListener('change', (ev)=>{
-  currentCategoryFilter = ev.target.value;
-  renderGallery();
+promptDropdown.querySelectorAll('.prompt-dropdown-item').forEach(item=>{
+  item.addEventListener('click', (ev)=>{
+    ev.stopPropagation();
+    currentCategoryFilter = item.dataset.category;
+    promptDropdown.querySelectorAll('.prompt-dropdown-item').forEach(i=> i.classList.toggle('active', i === item));
+    closePromptDropdown();
+    renderGallery();
+  });
+});
+
+document.addEventListener('click', (ev)=>{
+  if(!ev.target.closest('.type-tab-dropdown-wrap')) closePromptDropdown();
 });
 
 /* ---------------- password gate (write access + secret tab) ---------------- */
@@ -1223,11 +1275,10 @@ function requireUnlock(action){
 
 function enterSecretMode(){
   currentType = 'secret';
-  currentCategoryFilter = 'all';
-  document.getElementById('category-filter').value = 'all';
+  resetCategoryFilter();
   document.querySelectorAll('.type-tab').forEach(b=> b.classList.remove('active'));
   secretBtn.classList.add('secret-active');
-  updateCategoryFilterVisibility();
+  closePromptDropdown();
   renderGallery();
 }
 
