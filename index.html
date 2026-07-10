@@ -160,6 +160,17 @@
     border-color:var(--accent);
     color:var(--accent);
   }
+  .category-select{
+    margin-top:10px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    padding:6px 10px;
+    font-size:12px;
+    font-family:var(--font-mono);
+    cursor:pointer;
+  }
 
   /* ---------- Gallery ---------- */
   main{
@@ -580,12 +591,12 @@
     <button class="type-tab" data-type="outfit">Outfit</button>
     <button class="secret-btn" id="secret-btn" title="???" aria-label="Secret">(^╷ ̫ ╷^)ﾉ❤︎</button>
   </div>
-  <div class="preset-pills" id="category-filter" style="display:none;">
-    <button type="button" class="pill-chip active" data-category="all">All</button>
-    <button type="button" class="pill-chip" data-category="GIRL">GIRL</button>
-    <button type="button" class="pill-chip" data-category="BOY">BOY</button>
-    <button type="button" class="pill-chip" data-category="DUO">DUO</button>
-  </div>
+  <select id="category-filter" class="category-select" style="display:none;">
+    <option value="all">All categories</option>
+    <option value="GIRL">GIRL</option>
+    <option value="BOY">BOY</option>
+    <option value="DUO">DUO</option>
+  </select>
 </div>
 
 <main>
@@ -1160,17 +1171,15 @@ function deleteEntry(id){
 
 /* ---------------- type tabs ---------------- */
 function updateCategoryFilterVisibility(){
-  const row = document.getElementById('category-filter');
-  row.style.display = (currentType === 'prompt') ? 'flex' : 'none';
+  const select = document.getElementById('category-filter');
+  select.style.display = (currentType === 'prompt') ? 'inline-block' : 'none';
 }
 
 document.querySelectorAll('.type-tab').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     currentType = btn.dataset.type;
     currentCategoryFilter = 'all';
-    document.getElementById('category-filter').querySelectorAll('.pill-chip').forEach(c=>{
-      c.classList.toggle('active', c.dataset.category === 'all');
-    });
+    document.getElementById('category-filter').value = 'all';
     document.querySelectorAll('.type-tab').forEach(b=> b.classList.toggle('active', b === btn));
     document.getElementById('secret-btn').classList.remove('secret-active');
     updateCategoryFilterVisibility();
@@ -1178,14 +1187,9 @@ document.querySelectorAll('.type-tab').forEach(btn=>{
   });
 });
 
-document.getElementById('category-filter').querySelectorAll('.pill-chip').forEach(chip=>{
-  chip.addEventListener('click', ()=>{
-    currentCategoryFilter = chip.dataset.category;
-    document.getElementById('category-filter').querySelectorAll('.pill-chip').forEach(c=>{
-      c.classList.toggle('active', c === chip);
-    });
-    renderGallery();
-  });
+document.getElementById('category-filter').addEventListener('change', (ev)=>{
+  currentCategoryFilter = ev.target.value;
+  renderGallery();
 });
 
 /* ---------------- password gate (write access + secret tab) ---------------- */
@@ -1220,6 +1224,7 @@ function requireUnlock(action){
 function enterSecretMode(){
   currentType = 'secret';
   currentCategoryFilter = 'all';
+  document.getElementById('category-filter').value = 'all';
   document.querySelectorAll('.type-tab').forEach(b=> b.classList.remove('active'));
   secretBtn.classList.add('secret-active');
   updateCategoryFilterVisibility();
