@@ -826,7 +826,7 @@ function cardHtml(e){
     <div class="card-image-wrap">
       <img src="${escapeAttr(e.image)}" alt="saved artwork" loading="lazy" style="object-position:${cx}% ${cy}%" onerror="this.parentElement.classList.add('img-error')">
       <div class="img-error-fallback">Image not available yet</div>
-      ${(e.category || e.type) ? `<span class="type-badge">${escapeHtml(e.category || e.type)}</span>` : ''}
+      ${(e.type === 'prompt' || e.type === 'secret') ? `<span class="type-badge">${escapeHtml(e.category || 'ALL')}</span>` : ''}
       <div class="card-actions">
         <button class="card-icon-btn card-edit" data-id="${escapeAttr(e.id)}" aria-label="Edit">✎</button>
         <button class="card-icon-btn card-delete" data-id="${escapeAttr(e.id)}" aria-label="Delete">×</button>
