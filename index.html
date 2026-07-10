@@ -137,6 +137,30 @@
   }
   .secret-btn:hover{ color:var(--accent); transform:scale(1.08); }
 
+  .preset-pills{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:10px;
+  }
+  .pill-chip{
+    font-family:var(--font-mono);
+    font-size:12px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    padding:6px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:all 0.15s;
+  }
+  .pill-chip:hover{ border-color:var(--accent-soft); color:var(--text); }
+  .pill-chip.active{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+
   /* ---------- Gallery ---------- */
   main{
     max-width:1100px;
@@ -183,7 +207,7 @@
   }
   .card-image-wrap.img-error .img-error-fallback{ display:flex; }
   .card-actions{
-    position:absolute; top:8px; right:8px;
+    position:absolute; bottom:8px; right:8px;
     display:flex;
     gap:6px;
     opacity:0;
@@ -553,7 +577,14 @@
   <div class="type-tabs" id="type-tabs">
     <button class="type-tab active" data-type="style">Style</button>
     <button class="type-tab" data-type="prompt">Prompt</button>
+    <button class="type-tab" data-type="outfit">Outfit</button>
     <button class="secret-btn" id="secret-btn" title="???" aria-label="Secret">(^╷ ̫ ╷^)ﾉ❤︎</button>
+  </div>
+  <div class="preset-pills" id="category-filter" style="display:none;">
+    <button type="button" class="pill-chip active" data-category="all">All</button>
+    <button type="button" class="pill-chip" data-category="GIRL">GIRL</button>
+    <button type="button" class="pill-chip" data-category="BOY">BOY</button>
+    <button type="button" class="pill-chip" data-category="DUO">DUO</button>
   </div>
 </div>
 
@@ -582,6 +613,7 @@
       <select id="f-type">
         <option value="style">Style</option>
         <option value="prompt">Prompt</option>
+        <option value="outfit">Outfit</option>
         <option value="secret">Secret</option>
       </select>
     </div>
@@ -593,6 +625,15 @@
     <div class="field type-group" data-group="style">
       <label for="f-artists">Artist tags</label>
       <input type="text" id="f-artists" placeholder="artist:miyamoyan, artist:jp06, ...">
+    </div>
+
+    <div class="field type-group" data-group="prompt">
+      <label>Category</label>
+      <div class="preset-pills" id="category-pills">
+        <button type="button" class="pill-chip" data-category="GIRL">GIRL</button>
+        <button type="button" class="pill-chip" data-category="BOY">BOY</button>
+        <button type="button" class="pill-chip" data-category="DUO">DUO</button>
+      </div>
     </div>
 
     <div class="field type-group" data-group="prompt">
@@ -652,6 +693,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 let entries = [];
 let currentType = 'style';
+let currentCategoryFilter = 'all';
 
 function sbHeaders(extra){
   return {
@@ -680,6 +722,7 @@ function rowToEntry(row){
     number: row.number,
     params: row.params,
     artists: row.artists,
+    category: row.category || '',
     prompt: row.prompt,
     negative: row.negative,
     characters: row.characters || [],
@@ -702,7 +745,11 @@ async function loadEntries(){
 }
 
 function matchesFilters(entry){
-  return entry.type === currentType;
+  if(entry.type !== currentType) return false;
+  if(currentType === 'prompt' && currentCategoryFilter !== 'all'){
+    return (entry.category || '') === currentCategoryFilter;
+  }
+  return true;
 }
 
 function renderGallery(){
@@ -768,7 +815,7 @@ function cardHtml(e){
     <div class="card-image-wrap">
       <img src="${escapeAttr(e.image)}" alt="saved artwork" loading="lazy" style="object-position:${cx}% ${cy}%" onerror="this.parentElement.classList.add('img-error')">
       <div class="img-error-fallback">Image not available yet</div>
-      ${e.type ? `<span class="type-badge">${escapeHtml(e.type)}</span>` : ''}
+      ${(e.category || e.type) ? `<span class="type-badge">${escapeHtml(e.category || e.type)}</span>` : ''}
       <div class="card-actions">
         <button class="card-icon-btn card-edit" data-id="${escapeAttr(e.id)}" aria-label="Edit">✎</button>
         <button class="card-icon-btn card-delete" data-id="${escapeAttr(e.id)}" aria-label="Delete">×</button>
@@ -796,6 +843,7 @@ function escapeAttr(str){ return escapeHtml(str); }
 const entryOverlay = document.getElementById('entry-overlay');
 const characterList = document.getElementById('character-list');
 let cropX = 50, cropY = 50;
+let selectedCategory = '';
 
 const cropField = document.getElementById('crop-field');
 const cropPreview = document.getElementById('crop-preview');
@@ -851,11 +899,11 @@ document.getElementById('f-image').addEventListener('change', (ev)=>{
 
 function updateTypeGroups(){
   const type = document.getElementById('f-type').value;
-  const group = type === 'secret' ? 'prompt' : type;
+  const group = type === 'secret' ? 'prompt' : (type === 'outfit' ? 'style' : type);
   document.querySelectorAll('.type-group').forEach(el=>{
     el.classList.toggle('hidden', el.dataset.group !== group);
   });
-  document.getElementById('f-params-label').textContent = type === 'style' ? 'Settings' : 'Note';
+  document.getElementById('f-params-label').textContent = (type === 'style' || type === 'outfit') ? 'Settings' : 'Note';
 }
 
 function relabelCharacters(){
@@ -884,6 +932,16 @@ function addCharacterRow(outfit){
 document.getElementById('add-character-btn').addEventListener('click', ()=> addCharacterRow());
 document.getElementById('f-type').addEventListener('change', updateTypeGroups);
 
+document.getElementById('category-pills').querySelectorAll('.pill-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const cat = chip.dataset.category;
+    selectedCategory = (selectedCategory === cat) ? '' : cat;
+    document.getElementById('category-pills').querySelectorAll('.pill-chip').forEach(c=>{
+      c.classList.toggle('active', c.dataset.category === selectedCategory);
+    });
+  });
+});
+
 let editingId = null;
 
 function resetEntryForm(){
@@ -891,6 +949,8 @@ function resetEntryForm(){
   document.getElementById('f-image').value = '';
   document.getElementById('f-image-hint').textContent = '';
   document.getElementById('f-type').value = currentType;
+  selectedCategory = '';
+  document.getElementById('category-pills').querySelectorAll('.pill-chip').forEach(c=> c.classList.remove('active'));
   characterList.innerHTML = '';
   addCharacterRow();
   updateTypeGroups();
@@ -912,6 +972,10 @@ function openEditModal(id){
     document.getElementById('f-type').value = entry.type || 'style';
     document.getElementById('f-image').value = '';
     document.getElementById('f-image-hint').textContent = '(leave empty to keep current image)';
+    selectedCategory = entry.category || '';
+    document.getElementById('category-pills').querySelectorAll('.pill-chip').forEach(c=>{
+      c.classList.toggle('active', c.dataset.category === selectedCategory);
+    });
     characterList.innerHTML = '';
     if(entry.characters && entry.characters.length){
       entry.characters.forEach(c => addCharacterRow(c.outfit));
@@ -976,6 +1040,7 @@ function entryToRow(entryData){
     number: entryData.number,
     params: entryData.params,
     artists: entryData.artists,
+    category: entryData.category,
     prompt: entryData.prompt,
     negative: entryData.negative,
     characters: entryData.characters,
@@ -1021,7 +1086,8 @@ async function submitEntry(){
       type,
       number: document.getElementById('f-number').value.trim(),
       params: document.getElementById('f-params').value.trim(),
-      artists: type === 'style' ? document.getElementById('f-artists').value.trim() : '',
+      artists: (type === 'style' || type === 'outfit') ? document.getElementById('f-artists').value.trim() : '',
+      category: (type === 'prompt' || type === 'secret') ? selectedCategory : '',
       prompt: (type === 'prompt' || type === 'secret') ? document.getElementById('f-prompt').value.trim() : '',
       negative: document.getElementById('f-negative').value.trim(),
       characters: (type === 'prompt' || type === 'secret') ? characters : [],
@@ -1093,11 +1159,31 @@ function deleteEntry(id){
 }
 
 /* ---------------- type tabs ---------------- */
+function updateCategoryFilterVisibility(){
+  const row = document.getElementById('category-filter');
+  row.style.display = (currentType === 'prompt') ? 'flex' : 'none';
+}
+
 document.querySelectorAll('.type-tab').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     currentType = btn.dataset.type;
+    currentCategoryFilter = 'all';
+    document.getElementById('category-filter').querySelectorAll('.pill-chip').forEach(c=>{
+      c.classList.toggle('active', c.dataset.category === 'all');
+    });
     document.querySelectorAll('.type-tab').forEach(b=> b.classList.toggle('active', b === btn));
     document.getElementById('secret-btn').classList.remove('secret-active');
+    updateCategoryFilterVisibility();
+    renderGallery();
+  });
+});
+
+document.getElementById('category-filter').querySelectorAll('.pill-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    currentCategoryFilter = chip.dataset.category;
+    document.getElementById('category-filter').querySelectorAll('.pill-chip').forEach(c=>{
+      c.classList.toggle('active', c === chip);
+    });
     renderGallery();
   });
 });
@@ -1133,8 +1219,10 @@ function requireUnlock(action){
 
 function enterSecretMode(){
   currentType = 'secret';
+  currentCategoryFilter = 'all';
   document.querySelectorAll('.type-tab').forEach(b=> b.classList.remove('active'));
   secretBtn.classList.add('secret-active');
+  updateCategoryFilterVisibility();
   renderGallery();
 }
 
