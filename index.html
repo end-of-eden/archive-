@@ -612,7 +612,6 @@
     <div class="type-tab-dropdown-wrap">
       <button class="type-tab" data-type="prompt" id="prompt-tab">Prompt</button>
       <div class="prompt-dropdown" id="prompt-dropdown">
-        <button type="button" class="prompt-dropdown-item active" data-category="all">All categories</button>
         <button type="button" class="prompt-dropdown-item" data-category="GIRL">GIRL</button>
         <button type="button" class="prompt-dropdown-item" data-category="BOY">BOY</button>
         <button type="button" class="prompt-dropdown-item" data-category="DUO">DUO</button>
@@ -782,14 +781,24 @@ async function loadEntries(){
 function matchesFilters(entry){
   if(entry.type !== currentType) return false;
   if(currentType === 'prompt' && currentCategoryFilter !== 'all'){
-    return (entry.category || '') === currentCategoryFilter;
+    const cat = entry.category || '';
+    return cat === '' || cat === currentCategoryFilter;
   }
   return true;
 }
 
+const CATEGORY_ORDER = { '': 0, 'GIRL': 1, 'BOY': 2, 'DUO': 3 };
+
 function renderGallery(){
   const gallery = document.getElementById('gallery');
-  const visible = entries.filter(matchesFilters);
+  let visible = entries.filter(matchesFilters);
+  if(currentType === 'prompt' && currentCategoryFilter === 'all'){
+    visible = visible.slice().sort((a, b)=>{
+      const catDiff = (CATEGORY_ORDER[a.category || ''] ?? 9) - (CATEGORY_ORDER[b.category || ''] ?? 9);
+      if(catDiff !== 0) return catDiff;
+      return (a.number || '').localeCompare(b.number || '', undefined, { numeric:true });
+    });
+  }
   if(entries.length === 0){
     gallery.innerHTML = `<div class="empty-state">
       <h2>No pieces saved yet</h2>
