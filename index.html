@@ -350,7 +350,9 @@
     height:0;
   }
   .copy-block.tall{
-    height:180px;
+    height:auto;
+    max-height:none;
+    overflow-y:visible;
   }
 
   .copy-text{ display:inline-block; transition:filter 0.15s, opacity 0.15s; }
@@ -706,20 +708,10 @@
       <textarea id="f-prompt" placeholder="couple, hetero, 1girl, 1boy, ..."></textarea>
     </div>
 
-    <div class="field type-group" data-group="prompt">
+    <div class="field type-group" data-group="prompt,outfit">
       <label>Characters</label>
       <div id="character-list"></div>
       <button type="button" class="btn" id="add-character-btn">+ Add character</button>
-    </div>
-
-    <div class="field type-group" data-group="outfit">
-      <label for="f-outfit-a">Character A prompt</label>
-      <textarea id="f-outfit-a" placeholder="outfit, accessories, ..."></textarea>
-    </div>
-
-    <div class="field type-group" data-group="outfit">
-      <label for="f-outfit-b">Character B prompt</label>
-      <textarea id="f-outfit-b" placeholder="outfit, accessories, ..."></textarea>
     </div>
 
     <div class="field type-group" data-group="style,prompt,outfit">
@@ -1073,7 +1065,7 @@ document.getElementById('category-pills').querySelectorAll('.pill-chip').forEach
 let editingId = null;
 
 function resetEntryForm(){
-  ['f-params','f-artists','f-prompt','f-negative','f-number','f-outfit-a','f-outfit-b'].forEach(id=> document.getElementById(id).value = '');
+  ['f-params','f-artists','f-prompt','f-negative','f-number'].forEach(id=> document.getElementById(id).value = '');
   document.getElementById('f-image').value = '';
   document.getElementById('f-image-hint').textContent = '';
   document.getElementById('f-type').value = currentType;
@@ -1110,10 +1102,6 @@ function openEditModal(id){
     }else{
       addCharacterRow();
     }
-    const outfitA = (entry.characters || []).find(c => c.name === 'A');
-    const outfitB = (entry.characters || []).find(c => c.name === 'B');
-    document.getElementById('f-outfit-a').value = outfitA ? outfitA.outfit : '';
-    document.getElementById('f-outfit-b').value = outfitB ? outfitB.outfit : '';
     updateTypeGroups();
     cropX = entry.cropX != null ? entry.cropX : 50;
     cropY = entry.cropY != null ? entry.cropY : 50;
@@ -1227,11 +1215,6 @@ async function submitEntry(){
       outfit: row.querySelector('.char-outfit').value.trim()
     })).filter(c => c.outfit);
 
-    const outfitCharacters = [
-      { name: 'A', outfit: document.getElementById('f-outfit-a').value.trim() },
-      { name: 'B', outfit: document.getElementById('f-outfit-b').value.trim() }
-    ].filter(c => c.outfit);
-
     const entryData = {
       id,
       image: imageUrl,
@@ -1244,7 +1227,7 @@ async function submitEntry(){
       category: (type === 'prompt' || type === 'secret') ? selectedCategory : '',
       prompt: (type === 'prompt' || type === 'secret') ? document.getElementById('f-prompt').value.trim() : '',
       negative: document.getElementById('f-negative').value.trim(),
-      characters: (type === 'prompt' || type === 'secret') ? characters : (type === 'outfit' ? outfitCharacters : []),
+      characters: (type === 'prompt' || type === 'secret' || type === 'outfit') ? characters : [],
       tags: [],
       date: isEdit ? (existingEntry.date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10)
     };
