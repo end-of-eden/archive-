@@ -664,6 +664,7 @@
     <div class="field type-group" data-group="prompt">
       <label>Category</label>
       <div class="preset-pills" id="category-pills">
+        <button type="button" class="pill-chip" data-category="ALL">ALL</button>
         <button type="button" class="pill-chip" data-category="GIRL">GIRL</button>
         <button type="button" class="pill-chip" data-category="BOY">BOY</button>
         <button type="button" class="pill-chip" data-category="DUO">DUO</button>
@@ -782,12 +783,12 @@ function matchesFilters(entry){
   if(entry.type !== currentType) return false;
   if(currentType === 'prompt' && currentCategoryFilter !== 'all'){
     const cat = entry.category || '';
-    return cat === '' || cat === currentCategoryFilter;
+    return cat === '' || cat === 'ALL' || cat === currentCategoryFilter;
   }
   return true;
 }
 
-const CATEGORY_ORDER = { '': 0, 'GIRL': 1, 'BOY': 2, 'DUO': 3 };
+const CATEGORY_ORDER = { '': 0, 'ALL': 0, 'GIRL': 1, 'BOY': 2, 'DUO': 3 };
 
 function renderGallery(){
   const gallery = document.getElementById('gallery');
