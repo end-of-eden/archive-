@@ -719,12 +719,12 @@
       <textarea id="f-outfit-b" placeholder="outfit, accessories, ..."></textarea>
     </div>
 
-    <div class="field type-group" data-group="style,prompt">
+    <div class="field type-group" data-group="style,prompt,outfit">
       <label for="f-negative">Negative <span class="optional-hint">(optional)</span></label>
       <textarea id="f-negative" placeholder="text, logo, watermark, ..."></textarea>
     </div>
 
-    <div class="field type-group" data-group="style,prompt">
+    <div class="field type-group" data-group="style,prompt,outfit">
       <label for="f-params" id="f-params-label">Parameters</label>
       <input type="text" id="f-params" placeholder="28 / 6 / 0.3">
     </div>
@@ -1233,11 +1233,11 @@ async function submitEntry(){
       cropY,
       type,
       number: numberValue,
-      params: (type === 'style' || type === 'prompt' || type === 'secret') ? document.getElementById('f-params').value.trim() : '',
+      params: document.getElementById('f-params').value.trim(),
       artists: type === 'style' ? document.getElementById('f-artists').value.trim() : '',
       category: (type === 'prompt' || type === 'secret') ? selectedCategory : '',
       prompt: (type === 'prompt' || type === 'secret') ? document.getElementById('f-prompt').value.trim() : '',
-      negative: (type === 'style' || type === 'prompt' || type === 'secret') ? document.getElementById('f-negative').value.trim() : '',
+      negative: document.getElementById('f-negative').value.trim(),
       characters: (type === 'prompt' || type === 'secret') ? characters : (type === 'outfit' ? outfitCharacters : []),
       tags: [],
       date: isEdit ? (existingEntry.date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10)
