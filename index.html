@@ -349,6 +349,9 @@
     width:0;
     height:0;
   }
+  .copy-block.tall{
+    max-height:162px;
+  }
 
   .copy-text{ display:inline-block; transition:filter 0.15s, opacity 0.15s; }
   .copy-wrap.copied .copy-text{ filter:blur(4px); opacity:0.7; }
@@ -914,10 +917,11 @@ function renderGallery(){
 
 function fieldWithCopy(label, str, extraClass){
   if(!str) return '';
+  const blockClass = 'field-value copy-block' + (extraClass ? ' ' + extraClass : '');
   return `<div class="copy-field">
     <p class="field-label">${escapeHtml(label)}</p>
     <div class="copy-wrap" data-copy="${escapeAttr(str)}" title="Click to copy">
-      <div class="field-value copy-block${extraClass ? ' ' + extraClass : ''}">
+      <div class="${blockClass}">
         <span class="copy-text">${escapeHtml(str)}</span>
       </div>
       <span class="copy-feedback">Copied</span>
@@ -926,8 +930,10 @@ function fieldWithCopy(label, str, extraClass){
 }
 
 function cardHtml(e){
-  const characters = (e.characters||[])
-    .map(c => fieldWithCopy((c.name || '').toLowerCase(), c.outfit, 'muted'))
+  const charList = e.characters || [];
+  const isSingleCharacter = charList.length === 1;
+  const characters = charList
+    .map(c => fieldWithCopy((c.name || '').toLowerCase(), c.outfit, isSingleCharacter ? 'muted tall' : 'muted'))
     .join('');
   const cx = e.cropX != null ? e.cropX : 50;
   const cy = e.cropY != null ? e.cropY : 50;
