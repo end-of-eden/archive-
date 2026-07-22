@@ -650,6 +650,7 @@
       </div>
     </div>
     <button class="type-tab" data-type="outfit">Outfit</button>
+    <button class="type-tab" data-type="character">Character</button>
     <button class="secret-btn" id="secret-btn" title="???" aria-label="Secret">(^╷ ̫ ╷^)ﾉ❤︎</button>
   </div>
 </div>
@@ -680,6 +681,7 @@
         <option value="style">Style</option>
         <option value="prompt">Prompt</option>
         <option value="outfit">Outfit</option>
+        <option value="character">Character</option>
         <option value="secret">Secret</option>
       </select>
     </div>
@@ -703,8 +705,8 @@
       </div>
     </div>
 
-    <div class="field type-group" data-group="prompt">
-      <label for="f-prompt">Prompt</label>
+    <div class="field type-group" data-group="prompt,character">
+      <label for="f-prompt" id="f-prompt-label">Prompt</label>
       <textarea id="f-prompt" placeholder="couple, hetero, 1girl, 1boy, ..."></textarea>
     </div>
 
@@ -714,12 +716,12 @@
       <button type="button" class="btn" id="add-character-btn">+ Add character</button>
     </div>
 
-    <div class="field type-group" data-group="style,prompt,outfit">
+    <div class="field type-group" data-group="style,prompt,outfit,character">
       <label for="f-negative">Negative <span class="optional-hint">(optional)</span></label>
       <textarea id="f-negative" placeholder="text, logo, watermark, ..."></textarea>
     </div>
 
-    <div class="field type-group" data-group="style,prompt,outfit">
+    <div class="field type-group" data-group="style,prompt,outfit,character">
       <label for="f-params" id="f-params-label">Parameters</label>
       <input type="text" id="f-params" placeholder="28 / 6 / 0.3">
     </div>
@@ -945,7 +947,7 @@ function cardHtml(e){
     </div>
     <div class="card-meta">
       ${fieldWithCopy('artist tags', e.artists, 'muted')}
-      ${fieldWithCopy('prompt', e.prompt, 'muted')}
+      ${fieldWithCopy(e.type === 'character' ? 'appearance' : 'prompt', e.prompt, e.type === 'character' ? 'muted tall' : 'muted')}
       ${characters}
       ${fieldWithCopy('negative', e.negative, 'muted')}
       ${e.params ? `<div><p class="field-label">${e.type === 'style' ? 'settings' : 'note'}</p><p class="field-value muted">${escapeHtml(e.params)}</p></div>` : ''}
@@ -1024,6 +1026,15 @@ function updateTypeGroups(){
     el.classList.toggle('hidden', !groups.includes(group));
   });
   document.getElementById('f-params-label').textContent = type === 'style' ? 'Settings' : 'Note';
+  const promptLabel = document.getElementById('f-prompt-label');
+  const promptInput = document.getElementById('f-prompt');
+  if(type === 'character'){
+    promptLabel.textContent = 'Appearance';
+    promptInput.placeholder = '1girl, long red hair, golden eyes, ...';
+  }else{
+    promptLabel.textContent = 'Prompt';
+    promptInput.placeholder = 'couple, hetero, 1girl, 1boy, ...';
+  }
 }
 
 function relabelCharacters(){
@@ -1225,7 +1236,7 @@ async function submitEntry(){
       params: document.getElementById('f-params').value.trim(),
       artists: type === 'style' ? document.getElementById('f-artists').value.trim() : '',
       category: (type === 'prompt' || type === 'secret') ? selectedCategory : '',
-      prompt: (type === 'prompt' || type === 'secret') ? document.getElementById('f-prompt').value.trim() : '',
+      prompt: (type === 'prompt' || type === 'secret' || type === 'character') ? document.getElementById('f-prompt').value.trim() : '',
       negative: document.getElementById('f-negative').value.trim(),
       characters: (type === 'prompt' || type === 'secret' || type === 'outfit') ? characters : [],
       tags: [],
