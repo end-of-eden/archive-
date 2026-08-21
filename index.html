@@ -178,6 +178,32 @@
   .type-tab-dropdown-wrap{
     position:relative;
   }
+  .style-version-tabs{
+    max-width:1100px;
+    margin:16px auto 0;
+    padding:0 32px;
+    display:flex;
+    gap:8px;
+  }
+  .style-version-tabs.hidden{ display:none; }
+  .style-version-tab{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:999px;
+    color:var(--text-muted);
+    cursor:pointer;
+    font-family:var(--font-mono);
+    font-size:12px;
+    padding:7px 16px;
+    transition:background-color 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .style-version-tab:hover{ border-color:var(--accent-soft); color:var(--text); }
+  .style-version-tab.active{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+    color:var(--accent);
+    font-weight:500;
+  }
   .prompt-dropdown{
     position:absolute;
     top:100%; left:0;
@@ -655,6 +681,11 @@
   </div>
 </div>
 
+<div class="style-version-tabs" id="style-version-tabs" aria-label="NAI version">
+  <button type="button" class="style-version-tab active" data-version="NAI 4.5">NAI 4.5</button>
+  <button type="button" class="style-version-tab" data-version="NAI 5">NAI 5</button>
+</div>
+
 <main>
   <div class="gallery" id="gallery"></div>
 </main>
@@ -688,6 +719,14 @@
     <div class="field">
       <label for="f-number">Number <span class="optional-hint">shown when collapsed</span></label>
       <input type="text" id="f-number" placeholder="001">
+    </div>
+
+    <div class="field type-group" data-group="style">
+      <label>NAI version</label>
+      <div class="preset-pills" id="style-version-pills">
+        <button type="button" class="pill-chip active" data-version="NAI 4.5">NAI 4.5</button>
+        <button type="button" class="pill-chip" data-version="NAI 5">NAI 5</button>
+      </div>
     </div>
 
     <div class="field type-group" data-group="style">
@@ -775,6 +814,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let entries = [];
 let currentType = 'style';
 let currentCategoryFilter = 'all';
+let currentStyleVersion = 'NAI 4.5';
+let selectedStyleVersion = 'NAI 4.5';
 
 function sbHeaders(extra){
   return {
@@ -854,6 +895,10 @@ async function loadEntries(){
 
 function matchesFilters(entry){
   if(entry.type !== currentType) return false;
+  if(currentType === 'style'){
+    const version = (entry.tags || []).find(tag => tag === 'NAI 4.5' || tag === 'NAI 5') || 'NAI 4.5';
+    return version === currentStyleVersion;
+  }
   if(currentType === 'prompt' && currentCategoryFilter !== 'all'){
     const cat = entry.category || '';
     return cat === '' || cat === 'ALL' || cat === currentCategoryFilter;
@@ -965,6 +1010,17 @@ const entryOverlay = document.getElementById('entry-overlay');
 const characterList = document.getElementById('character-list');
 let cropX = 50, cropY = 50;
 let selectedCategory = '';
+
+function setSelectedStyleVersion(version){
+  selectedStyleVersion = version;
+  document.getElementById('style-version-pills').querySelectorAll('.pill-chip').forEach(chip=>{
+    chip.classList.toggle('active', chip.dataset.version === selectedStyleVersion);
+  });
+}
+
+document.getElementById('style-version-pills').querySelectorAll('.pill-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=> setSelectedStyleVersion(chip.dataset.version));
+});
 
 const cropField = document.getElementById('crop-field');
 const cropPreview = document.getElementById('crop-preview');
@@ -1080,6 +1136,7 @@ function resetEntryForm(){
   document.getElementById('f-image').value = '';
   document.getElementById('f-image-hint').textContent = '';
   document.getElementById('f-type').value = currentType;
+  setSelectedStyleVersion(currentStyleVersion);
   selectedCategory = '';
   document.getElementById('category-pills').querySelectorAll('.pill-chip').forEach(c=> c.classList.remove('active'));
   characterList.innerHTML = '';
@@ -1101,6 +1158,7 @@ function openEditModal(id){
     document.getElementById('f-prompt').value = entry.prompt || '';
     document.getElementById('f-negative').value = entry.negative || '';
     document.getElementById('f-type').value = entry.type || 'style';
+    setSelectedStyleVersion((entry.tags || []).find(tag => tag === 'NAI 4.5' || tag === 'NAI 5') || 'NAI 4.5');
     document.getElementById('f-image').value = '';
     document.getElementById('f-image-hint').textContent = '(leave empty to keep current image)';
     selectedCategory = entry.category || '';
@@ -1195,10 +1253,14 @@ async function submitEntry(){
       if(en.type !== type) return false;
       if((en.number || '').trim() !== numberValue) return false;
       if(usesCategory) return (en.category || '') === selectedCategory;
+      if(type === 'style'){
+        const version = (en.tags || []).find(tag => tag === 'NAI 4.5' || tag === 'NAI 5') || 'NAI 4.5';
+        return version === selectedStyleVersion;
+      }
       return true;
     });
     if(dupe){
-      const scopeLabel = usesCategory ? (selectedCategory || 'ALL') : type;
+      const scopeLabel = usesCategory ? (selectedCategory || 'ALL') : (type === 'style' ? selectedStyleVersion : type);
       showToast(`"${numberValue}" is already used in ${scopeLabel}. Choose a different number.`, true);
       return;
     }
@@ -1239,7 +1301,7 @@ async function submitEntry(){
       prompt: (type === 'prompt' || type === 'secret' || type === 'character') ? document.getElementById('f-prompt').value.trim() : '',
       negative: document.getElementById('f-negative').value.trim(),
       characters: (type === 'prompt' || type === 'secret' || type === 'outfit') ? characters : [],
-      tags: [],
+      tags: type === 'style' ? [selectedStyleVersion] : (existingEntry?.tags || []),
       date: isEdit ? (existingEntry.date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10)
     };
 
@@ -1309,6 +1371,21 @@ function deleteEntry(id){
 
 /* ---------------- type tabs ---------------- */
 const promptDropdown = document.getElementById('prompt-dropdown');
+const styleVersionTabs = document.getElementById('style-version-tabs');
+
+styleVersionTabs.querySelectorAll('.style-version-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    currentStyleVersion = tab.dataset.version;
+    styleVersionTabs.querySelectorAll('.style-version-tab').forEach(item=>{
+      item.classList.toggle('active', item === tab);
+    });
+    renderGallery();
+  });
+});
+
+function updateStyleVersionTabs(){
+  styleVersionTabs.classList.toggle('hidden', currentType !== 'style');
+}
 
 function resetCategoryFilter(){
   currentCategoryFilter = 'all';
@@ -1330,6 +1407,7 @@ document.querySelectorAll('.type-tab').forEach(btn=>{
     resetCategoryFilter();
     document.querySelectorAll('.type-tab').forEach(b=> b.classList.toggle('active', b === btn));
     document.getElementById('secret-btn').classList.remove('secret-active');
+    updateStyleVersionTabs();
 
     if(isPromptTab){
       ev.stopPropagation();
@@ -1393,6 +1471,7 @@ function enterSecretMode(){
   resetCategoryFilter();
   document.querySelectorAll('.type-tab').forEach(b=> b.classList.remove('active'));
   secretBtn.classList.add('secret-active');
+  updateStyleVersionTabs();
   closePromptDropdown();
   renderGallery();
 }
