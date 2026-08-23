@@ -300,6 +300,13 @@
     transition:color 0.15s, border-color 0.15s;
   }
   .card-icon-btn:hover{ color:var(--accent); border-color:var(--accent); }
+  .card-favorite{
+    font-size:14px;
+  }
+  .card-favorite.is-favorite{
+    color:var(--gold);
+    border-color:var(--gold);
+  }
   .card-icon-btn.card-delete:hover{ color:var(--accent-2); border-color:var(--accent-2); }
   .type-badge{
     position:absolute; top:8px; left:8px;
@@ -677,6 +684,7 @@
     </div>
     <button class="type-tab" data-type="outfit">Outfit</button>
     <button class="type-tab" data-type="character">Character</button>
+    <button class="type-tab" data-type="favorites">Favorites</button>
     <button class="secret-btn" id="secret-btn" title="???" aria-label="Secret">(^╷ ̫ ╷^)ﾉ❤︎</button>
   </div>
 </div>
@@ -816,6 +824,29 @@ let currentType = 'style';
 let currentCategoryFilter = 'all';
 let currentStyleVersion = 'NAI 4.5';
 let selectedStyleVersion = 'NAI 4.5';
+const FAVORITES_KEY = 'synapse-favorites';
+let favoriteIds = loadFavoriteIds();
+
+function loadFavoriteIds(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    return new Set(Array.isArray(saved) ? saved.map(String) : []);
+  }catch(e){
+    return new Set();
+  }
+}
+
+function saveFavoriteIds(){
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(favoriteIds)));
+}
+
+function toggleFavorite(id){
+  const key = String(id);
+  if(favoriteIds.has(key)) favoriteIds.delete(key);
+  else favoriteIds.add(key);
+  saveFavoriteIds();
+  renderGallery();
+}
 
 function sbHeaders(extra){
   return {
@@ -894,6 +925,7 @@ async function loadEntries(){
 }
 
 function matchesFilters(entry){
+  if(currentType === 'favorites') return favoriteIds.has(String(entry.id));
   if(entry.type !== currentType) return false;
   if(currentType === 'style'){
     const version = (entry.tags || []).find(tag => tag === 'NAI 4.5' || tag === 'NAI 5') || 'NAI 4.5';
@@ -940,6 +972,12 @@ function renderGallery(){
       deleteEntry(btn.dataset.id);
     });
   });
+  gallery.querySelectorAll('.card-favorite').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      toggleFavorite(btn.dataset.id);
+    });
+  });
   gallery.querySelectorAll('.card-edit').forEach(btn=>{
     btn.addEventListener('click', (ev)=>{
       ev.stopPropagation();
@@ -976,6 +1014,7 @@ function cardHtml(e){
     .join('');
   const cx = e.cropX != null ? e.cropX : 50;
   const cy = e.cropY != null ? e.cropY : 50;
+  const isFavorite = favoriteIds.has(String(e.id));
   return `
   <article class="card">
     <div class="card-image-wrap">
@@ -983,6 +1022,7 @@ function cardHtml(e){
       <div class="img-error-fallback">Image not available yet</div>
       ${(e.type === 'prompt' || e.type === 'secret') ? `<span class="type-badge">${escapeHtml(e.category || 'ALL')}</span>` : ''}
       <div class="card-actions">
+        <button class="card-icon-btn card-favorite${isFavorite ? ' is-favorite' : ''}" data-id="${escapeAttr(e.id)}" aria-label="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}" aria-pressed="${isFavorite}">${isFavorite ? '♥' : '♡'}</button>
         <button class="card-icon-btn card-edit" data-id="${escapeAttr(e.id)}" aria-label="Edit">✎</button>
         <button class="card-icon-btn card-delete" data-id="${escapeAttr(e.id)}" aria-label="Delete">×</button>
       </div>
