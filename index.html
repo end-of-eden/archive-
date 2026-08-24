@@ -444,6 +444,13 @@
     padding:60px 20px;
   }
   .overlay.open{ display:flex; }
+  .access-overlay{
+    z-index:100;
+    align-items:center;
+    padding:20px;
+    background:var(--bg);
+  }
+  .access-overlay .modal{ max-width:420px; }
   .lightbox-overlay{
     align-items:center;
     padding:40px;
@@ -661,6 +668,20 @@
 <!-- End www.Cursors-4U.com Code -->
 </head>
 <body>
+
+<!-- Main access gate -->
+<div class="overlay access-overlay open" id="access-overlay">
+  <div class="modal">
+    <h2>Password</h2>
+    <p class="modal-sub">Enter the password to open the archive.</p>
+    <div class="field">
+      <input type="password" id="access-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="access-submit">Enter</button>
+    </div>
+  </div>
+</div>
 
 <header class="hero">
   <div class="hero-inner">
@@ -1187,45 +1208,41 @@ function resetEntryForm(){
 }
 
 function openEditModal(id){
-  requireUnlock(()=>{
-    const entry = entries.find(en => en.id === id);
-    if(!entry) return;
-    editingId = id;
-    document.getElementById('entry-modal-title').textContent = 'Edit piece';
-    document.getElementById('f-params').value = entry.params || '';
-    document.getElementById('f-number').value = entry.number || '';
-    document.getElementById('f-artists').value = entry.artists || '';
-    document.getElementById('f-prompt').value = entry.prompt || '';
-    document.getElementById('f-negative').value = entry.negative || '';
-    document.getElementById('f-type').value = entry.type || 'style';
-    setSelectedStyleVersion((entry.tags || []).find(tag => tag === 'NAI 4.5' || tag === 'NAI 5') || 'NAI 4.5');
-    document.getElementById('f-image').value = '';
-    document.getElementById('f-image-hint').textContent = '(leave empty to keep current image)';
-    selectedCategory = entry.category || '';
-    document.getElementById('category-pills').querySelectorAll('.pill-chip').forEach(c=>{
-      c.classList.toggle('active', c.dataset.category === selectedCategory);
-    });
-    characterList.innerHTML = '';
-    if(entry.characters && entry.characters.length){
-      entry.characters.forEach(c => addCharacterRow(c.outfit));
-    }else{
-      addCharacterRow();
-    }
-    updateTypeGroups();
-    cropX = entry.cropX != null ? entry.cropX : 50;
-    cropY = entry.cropY != null ? entry.cropY : 50;
-    if(entry.image) showCropPreview(entry.image); else hideCropPreview();
-    entryOverlay.classList.add('open');
+  const entry = entries.find(en => en.id === id);
+  if(!entry) return;
+  editingId = id;
+  document.getElementById('entry-modal-title').textContent = 'Edit piece';
+  document.getElementById('f-params').value = entry.params || '';
+  document.getElementById('f-number').value = entry.number || '';
+  document.getElementById('f-artists').value = entry.artists || '';
+  document.getElementById('f-prompt').value = entry.prompt || '';
+  document.getElementById('f-negative').value = entry.negative || '';
+  document.getElementById('f-type').value = entry.type || 'style';
+  setSelectedStyleVersion((entry.tags || []).find(tag => tag === 'NAI 4.5' || tag === 'NAI 5') || 'NAI 4.5');
+  document.getElementById('f-image').value = '';
+  document.getElementById('f-image-hint').textContent = '(leave empty to keep current image)';
+  selectedCategory = entry.category || '';
+  document.getElementById('category-pills').querySelectorAll('.pill-chip').forEach(c=>{
+    c.classList.toggle('active', c.dataset.category === selectedCategory);
   });
+  characterList.innerHTML = '';
+  if(entry.characters && entry.characters.length){
+    entry.characters.forEach(c => addCharacterRow(c.outfit));
+  }else{
+    addCharacterRow();
+  }
+  updateTypeGroups();
+  cropX = entry.cropX != null ? entry.cropX : 50;
+  cropY = entry.cropY != null ? entry.cropY : 50;
+  if(entry.image) showCropPreview(entry.image); else hideCropPreview();
+  entryOverlay.classList.add('open');
 }
 
 document.getElementById('add-fab').addEventListener('click', ()=>{
-  requireUnlock(()=>{
-    editingId = null;
-    document.getElementById('entry-modal-title').textContent = 'Add new piece';
-    resetEntryForm();
-    entryOverlay.classList.add('open');
-  });
+  editingId = null;
+  document.getElementById('entry-modal-title').textContent = 'Add new piece';
+  resetEntryForm();
+  entryOverlay.classList.add('open');
 });
 document.getElementById('entry-cancel').addEventListener('click', ()=> entryOverlay.classList.remove('open'));
 
@@ -1382,7 +1399,7 @@ async function submitEntry(){
 }
 
 function deleteEntry(id){
-  requireUnlock(async ()=>{
+  (async ()=>{
     const proceed = await confirmDialog('Delete this piece?', "This can't be undone.", 'Delete');
     if(!proceed) return;
     const entry = entries.find(e => e.id === id);
@@ -1406,7 +1423,7 @@ function deleteEntry(id){
     }catch(err){
       showToast(err.message || 'Delete failed.', true);
     }
-  });
+  })();
 }
 
 /* ---------------- type tabs ---------------- */
@@ -1477,9 +1494,10 @@ document.addEventListener('click', (ev)=>{
   if(!ev.target.closest('.type-tab-dropdown-wrap')) closePromptDropdown();
 });
 
-/* ---------------- password gate (write access + secret tab) ---------------- */
+/* ---------------- password gates (archive access + secret tab) ---------------- */
 const ACCESS_HASH = 'd4ebe249aeb656f93143920b1ca7897c26fe04a064674d7c1849b435acb41ca2';
-const ACCESS_SESSION_KEY = 'synapse-unlocked';
+const ACCESS_SESSION_KEY = 'synapse-access-unlocked';
+const SECRET_SESSION_KEY = 'synapse-secret-unlocked';
 
 async function sha256Hex(str){
   const enc = new TextEncoder().encode(str);
@@ -1488,7 +1506,34 @@ async function sha256Hex(str){
 }
 
 function isUnlocked(){
-  return sessionStorage.getItem(ACCESS_SESSION_KEY) === '1';
+  return sessionStorage.getItem(SECRET_SESSION_KEY) === '1';
+}
+
+const accessOverlay = document.getElementById('access-overlay');
+const accessPassword = document.getElementById('access-password');
+
+async function submitAccessPassword(){
+  const hash = await sha256Hex(accessPassword.value);
+  if(hash !== ACCESS_HASH){
+    showToast('Wrong password.', true);
+    accessPassword.select();
+    return;
+  }
+  sessionStorage.setItem(ACCESS_SESSION_KEY, '1');
+  accessOverlay.classList.remove('open');
+  await loadEntries();
+}
+
+document.getElementById('access-submit').addEventListener('click', submitAccessPassword);
+accessPassword.addEventListener('keydown', (ev)=>{
+  if(ev.key === 'Enter') submitAccessPassword();
+});
+
+if(sessionStorage.getItem(ACCESS_SESSION_KEY) === '1'){
+  accessOverlay.classList.remove('open');
+  loadEntries();
+}else{
+  requestAnimationFrame(()=> accessPassword.focus());
 }
 
 const secretOverlay = document.getElementById('secret-overlay');
@@ -1525,7 +1570,7 @@ document.getElementById('secret-submit').addEventListener('click', async ()=>{
   const val = document.getElementById('secret-password').value;
   const hash = await sha256Hex(val);
   if(hash === ACCESS_HASH){
-    sessionStorage.setItem(ACCESS_SESSION_KEY, '1');
+    sessionStorage.setItem(SECRET_SESSION_KEY, '1');
     secretOverlay.classList.remove('open');
     const action = pendingUnlockAction;
     pendingUnlockAction = null;
@@ -1569,11 +1614,10 @@ document.getElementById('lightbox-close').addEventListener('click', (ev)=>{
 lightboxOverlay.addEventListener('click', ()=> closeLightbox());
 document.addEventListener('keydown', (ev)=>{
   if(ev.key !== 'Escape') return;
+  if(accessOverlay.classList.contains('open')) return;
   if(lightboxOverlay.classList.contains('open')){ closeLightbox(); return; }
   document.querySelectorAll('.overlay.open').forEach(el=> el.classList.remove('open'));
 });
-
-loadEntries();
 
 /* ---------------- cursor heart trail ---------------- */
 if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
