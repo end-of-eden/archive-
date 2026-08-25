@@ -258,6 +258,10 @@
     transition:border-color 0.2s, transform 0.2s;
   }
   .card:hover{ border-color:var(--accent-soft); transform:translateY(-2px); }
+  .card.nai5-23{
+    border:2px solid var(--gold);
+  }
+  .card.nai5-23:hover{ border-color:var(--gold); }
   .card-image-wrap{
     position:relative;
     aspect-ratio:1/1;
@@ -1036,8 +1040,11 @@ function cardHtml(e){
   const cx = e.cropX != null ? e.cropX : 50;
   const cy = e.cropY != null ? e.cropY : 50;
   const isFavorite = favoriteIds.has(String(e.id));
+  const isNai5Number23 = e.type === 'style'
+    && (e.tags || []).includes('NAI 5')
+    && String(e.number || '').trim() === '23';
   return `
-  <article class="card">
+  <article class="card${isNai5Number23 ? ' nai5-23' : ''}">
     <div class="card-image-wrap">
       <img src="${escapeAttr(e.image)}" alt="saved artwork" loading="lazy" style="object-position:${cx}% ${cy}%" onerror="this.parentElement.classList.add('img-error')">
       <div class="img-error-fallback">Image not available yet</div>
