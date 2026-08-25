@@ -1050,7 +1050,7 @@ function cardHtml(e){
   const isFavorite = favoriteIds.has(String(e.id));
   const isNai5Number23 = e.type === 'style'
     && (e.tags || []).includes('NAI 5')
-    && String(e.number || '').trim() === '23';
+    && Number.parseInt(String(e.number || '').trim(), 10) === 23;
   return `
   <article class="card${isNai5Number23 ? ' nai5-23' : ''}">
     <div class="card-image-wrap">
