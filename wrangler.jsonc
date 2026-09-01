@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hongcha-archive-api",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-09-01",
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hongcha-archive",
+      "database_id": "6ac0f31f-1a03-4613-bb29-6855ddb609ee"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "synapse-archive-images"
+    }
+  ]
+}

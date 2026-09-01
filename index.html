@@ -895,8 +895,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://hpswgqgcklyumjqwjdmp.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhwc3dncWdja2x5dW1qcXdqZG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1Nzk3OTIsImV4cCI6MjA5OTE1NTc5Mn0.gDwiDCapbXJAFWjl9EnytNSZ6f8EDUPb-WvGFB4k1Xc';
+const ARCHIVE_API_URL = 'https://hongcha-archive-api.busyhyundai.workers.dev';
 
 let entries = [];
 let currentType = 'style';
@@ -927,14 +926,6 @@ function toggleFavorite(id){
   else favoriteIds.add(key);
   saveFavoriteIds();
   renderGallery();
-}
-
-function sbHeaders(extra){
-  return {
-    'apikey': SUPABASE_ANON_KEY,
-    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-    ...(extra || {})
-  };
 }
 
 function showToast(msg, isError){
@@ -974,8 +965,9 @@ function rowToEntry(row){
   return {
     id: row.id,
     image: row.image,
-    cropX: row.crop_x != null ? row.crop_x : 50,
-    cropY: row.crop_y != null ? row.crop_y : 50,
+    thumbnail: row.thumbnail || row.image,
+    cropX: row.cropX != null ? row.cropX : (row.crop_x != null ? row.crop_x : 50),
+    cropY: row.cropY != null ? row.cropY : (row.crop_y != null ? row.crop_y : 50),
     type: row.type,
     number: row.number,
     params: row.params,
@@ -994,23 +986,18 @@ async function loadEntries(){
     <p>Loading...</p>
   </div>`;
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/entries?select=*&order=number.asc,created_at.asc`, {
-      headers: sbHeaders()
-    });
-    if(!res.ok) throw new Error(`Supabase unavailable (${res.status})`);
-    const rows = await res.json();
-    entries = Array.isArray(rows) ? rows.map(rowToEntry) : [];
-  }catch(e){
-    try{
-      const fallbackRes = await fetch(`data.json?fallback=${Date.now()}`, { cache:'no-store' });
-      if(!fallbackRes.ok) throw new Error(`Backup unavailable (${fallbackRes.status})`);
-      const fallbackRows = await fallbackRes.json();
-      entries = Array.isArray(fallbackRows) ? fallbackRows : [];
-      showToast('Supabase is unavailable. Showing the GitHub backup.', true);
-    }catch(fallbackError){
-      entries = [];
-    }
-  }
+    const [apiResult, backupResult] = await Promise.allSettled([
+      fetch(`${ARCHIVE_API_URL}/entries`, { cache:'no-store' }),
+      fetch(`data.json?fallback=${Date.now()}`, { cache:'no-store' })
+    ]);
+    const apiRows = apiResult.status === 'fulfilled' && apiResult.value.ok ? await apiResult.value.json() : [];
+    const backupRows = backupResult.status === 'fulfilled' && backupResult.value.ok ? await backupResult.value.json() : [];
+    const merged = new Map();
+    if(Array.isArray(backupRows)) backupRows.forEach(row => merged.set(String(row.id), rowToEntry(row)));
+    if(Array.isArray(apiRows)) apiRows.forEach(row => merged.set(String(row.id), rowToEntry(row)));
+    entries = Array.from(merged.values());
+    if(apiResult.status !== 'fulfilled' || !apiResult.value.ok) showToast('Cloudflare is unavailable. Showing the GitHub backup.', true);
+  }catch(e){ entries = []; }
   renderGallery();
 }
 
@@ -1339,51 +1326,31 @@ document.getElementById('entry-cancel').addEventListener('click', ()=> entryOver
 
 document.getElementById('entry-submit').addEventListener('click', submitEntry);
 
-/* ---------------- Supabase Storage + REST helpers ---------------- */
-async function sbUploadImage(path, file){
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/images/${path}`, {
-    method: 'POST',
-    headers: sbHeaders({ 'Content-Type': file.type || 'application/octet-stream' }),
-    body: file
+/* ---------------- Cloudflare R2 + D1 helpers ---------------- */
+function imageToWebP(file, maxSize, quality){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxSize / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Image conversion failed.')), 'image/webp', quality);
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error('Could not read this image.')); };
+    img.src = url;
   });
-  if(!res.ok){
-    const err = await res.json().catch(()=>({}));
-    throw new Error(err.message || `Image upload failed (${res.status})`);
-  }
-  return `${SUPABASE_URL}/storage/v1/object/public/images/${path}`;
 }
 
-async function sbDeleteImage(path){
-  await fetch(`${SUPABASE_URL}/storage/v1/object/images/${path}`, {
-    method: 'DELETE',
-    headers: sbHeaders()
-  }).catch(()=>{});
-}
-
-function imagePathFromUrl(url){
-  if(!url) return null;
-  const marker = '/storage/v1/object/public/images/';
-  const idx = url.indexOf(marker);
-  return idx >= 0 ? url.slice(idx + marker.length) : null;
-}
-
-function entryToRow(entryData){
-  return {
-    id: entryData.id,
-    image: entryData.image,
-    crop_x: entryData.cropX,
-    crop_y: entryData.cropY,
-    type: entryData.type,
-    number: entryData.number,
-    params: entryData.params,
-    artists: entryData.artists,
-    category: entryData.category,
-    prompt: entryData.prompt,
-    negative: entryData.negative,
-    characters: entryData.characters,
-    tags: entryData.tags,
-    date: entryData.date
-  };
+async function apiError(res, fallback){
+  const body = await res.json().catch(()=>({}));
+  return new Error(body.error || `${fallback} (${res.status})`);
 }
 
 async function submitEntry(){
@@ -1421,15 +1388,6 @@ async function submitEntry(){
   try{
     const existingEntry = isEdit ? entries.find(en => en.id === editingId) : null;
     const id = isEdit ? editingId : `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    let imageUrl = isEdit ? existingEntry.image : null;
-    const oldImagePath = isEdit ? imagePathFromUrl(existingEntry.image) : null;
-
-    if(file){
-      const ext = file.name.split('.').pop().toLowerCase();
-      const newImagePath = `${id}-${Date.now()}.${ext}`;
-      imageUrl = await sbUploadImage(newImagePath, file);
-      if(oldImagePath) await sbDeleteImage(oldImagePath);
-    }
 
     const characters = Array.from(characterList.querySelectorAll('.character-row')).map(row => ({
       name: row.querySelector('.char-label').textContent.trim(),
@@ -1438,7 +1396,6 @@ async function submitEntry(){
 
     const entryData = {
       id,
-      image: imageUrl,
       cropX,
       cropY,
       type,
@@ -1453,29 +1410,22 @@ async function submitEntry(){
       date: isEdit ? (existingEntry.date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10)
     };
 
-    const row = entryToRow(entryData);
-
-    if(isEdit){
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/entries?id=eq.${id}`, {
-        method: 'PATCH',
-        headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
-        body: JSON.stringify(row)
-      });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({}));
-        throw new Error(err.message || `Update failed (${res.status})`);
-      }
-    }else{
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/entries`, {
-        method: 'POST',
-        headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
-        body: JSON.stringify(row)
-      });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({}));
-        throw new Error(err.message || `Save failed (${res.status})`);
-      }
+    const form = new FormData();
+    form.append('metadata', JSON.stringify(entryData));
+    if(file){
+      const [original, thumbnail] = await Promise.all([
+        imageToWebP(file, 2048, 0.86),
+        imageToWebP(file, 480, 0.76)
+      ]);
+      form.append('original', original, 'original.webp');
+      form.append('thumbnail', thumbnail, 'thumbnail.webp');
     }
+    const res = await fetch(`${ARCHIVE_API_URL}/entries${isEdit ? `/${encodeURIComponent(id)}` : ''}`, {
+      method: isEdit ? 'PUT' : 'POST',
+      headers: { 'X-Archive-Key': archiveApiKey },
+      body: form
+    });
+    if(!res.ok) throw await apiError(res, isEdit ? 'Update failed' : 'Save failed');
 
     await loadEntries();
     entryOverlay.classList.remove('open');
@@ -1493,21 +1443,12 @@ function deleteEntry(id){
   (async ()=>{
     const proceed = await confirmDialog('Delete this piece?', "This can't be undone.", 'Delete');
     if(!proceed) return;
-    const entry = entries.find(e => e.id === id);
-    if(!entry) return;
-
     try{
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/entries?id=eq.${id}`, {
+      const res = await fetch(`${ARCHIVE_API_URL}/entries/${encodeURIComponent(id)}`, {
         method: 'DELETE',
-        headers: sbHeaders()
+        headers: { 'X-Archive-Key': archiveApiKey }
       });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({}));
-        throw new Error(err.message || `Delete failed (${res.status})`);
-      }
-
-      const imgPath = imagePathFromUrl(entry.image);
-      if(imgPath) await sbDeleteImage(imgPath);
+      if(!res.ok) throw await apiError(res, 'Delete failed');
 
       await loadEntries();
       showToast('Deleted.');
@@ -1589,7 +1530,9 @@ document.addEventListener('click', (ev)=>{
 const ACCESS_HASH = '4494a7fccb1246112d0a61f53dff99b68dddf75ddc5bf9e387ded10babadeb30';
 const ACCESS_FALLBACK_HASH = 'f644d2c9';
 const ACCESS_SESSION_KEY = 'hongcha-access-unlocked-v2';
+const API_KEY_SESSION_KEY = 'hongcha-api-key-v1';
 const SECRET_SESSION_KEY = 'synapse-secret-unlocked';
+let archiveApiKey = sessionStorage.getItem(API_KEY_SESSION_KEY) || '';
 
 async function sha256Hex(str){
   const enc = new TextEncoder().encode(str);
@@ -1626,6 +1569,8 @@ async function submitAccessPassword(){
       return;
     }
     sessionStorage.setItem(ACCESS_SESSION_KEY, '1');
+    sessionStorage.setItem(API_KEY_SESSION_KEY, normalizedPassword);
+    archiveApiKey = normalizedPassword;
     accessOverlay.classList.remove('open');
     await loadEntries();
   }catch(err){
@@ -1639,10 +1584,11 @@ accessPassword.addEventListener('keydown', (ev)=>{
   if(ev.key === 'Enter') submitAccessPassword();
 });
 
-if(sessionStorage.getItem(ACCESS_SESSION_KEY) === '1'){
+if(sessionStorage.getItem(ACCESS_SESSION_KEY) === '1' && archiveApiKey){
   accessOverlay.classList.remove('open');
   loadEntries();
 }else{
+  sessionStorage.removeItem(ACCESS_SESSION_KEY);
   requestAnimationFrame(()=> accessPassword.focus());
 }
 
