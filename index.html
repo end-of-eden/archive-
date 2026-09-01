@@ -1601,15 +1601,21 @@ const accessOverlay = document.getElementById('access-overlay');
 const accessPassword = document.getElementById('access-password');
 
 async function submitAccessPassword(){
-  const hash = await sha256Hex(accessPassword.value);
-  if(hash !== ACCESS_HASH){
-    showToast('Wrong password.', true);
-    accessPassword.select();
-    return;
+  try{
+    const normalizedPassword = accessPassword.value.trim().toLowerCase();
+    const hash = await sha256Hex(normalizedPassword);
+    if(hash !== ACCESS_HASH){
+      showToast('Wrong password.', true);
+      accessPassword.select();
+      return;
+    }
+    sessionStorage.setItem(ACCESS_SESSION_KEY, '1');
+    accessOverlay.classList.remove('open');
+    await loadEntries();
+  }catch(err){
+    console.error(err);
+    showToast('Could not unlock. Refresh and try again.', true);
   }
-  sessionStorage.setItem(ACCESS_SESSION_KEY, '1');
-  accessOverlay.classList.remove('open');
-  await loadEntries();
 }
 
 document.getElementById('access-submit').addEventListener('click', submitAccessPassword);
