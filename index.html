@@ -1584,6 +1584,7 @@ document.addEventListener('click', (ev)=>{
 
 /* ---------------- password gates (archive access + secret tab) ---------------- */
 const ACCESS_HASH = '4494a7fccb1246112d0a61f53dff99b68dddf75ddc5bf9e387ded10babadeb30';
+const ACCESS_FALLBACK_HASH = 'f644d2c9';
 const ACCESS_SESSION_KEY = 'hongcha-access-unlocked-v2';
 const SECRET_SESSION_KEY = 'synapse-secret-unlocked';
 
@@ -1591,6 +1592,15 @@ async function sha256Hex(str){
   const enc = new TextEncoder().encode(str);
   const buf = await crypto.subtle.digest('SHA-256', enc);
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function fnv1aHex(str){
+  let hash = 0x811c9dc5;
+  for(const char of str){
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
 function isUnlocked(){
@@ -1603,8 +1613,11 @@ const accessPassword = document.getElementById('access-password');
 async function submitAccessPassword(){
   try{
     const normalizedPassword = accessPassword.value.trim().toLowerCase();
-    const hash = await sha256Hex(normalizedPassword);
-    if(hash !== ACCESS_HASH){
+    const hasSecureHash = !!(window.crypto && window.crypto.subtle);
+    const isCorrect = hasSecureHash
+      ? await sha256Hex(normalizedPassword) === ACCESS_HASH
+      : fnv1aHex(normalizedPassword) === ACCESS_FALLBACK_HASH;
+    if(!isCorrect){
       showToast('Wrong password.', true);
       accessPassword.select();
       return;
