@@ -998,12 +998,13 @@ const CATEGORY_ORDER = { '': 0, 'ALL': 0, 'GIRL': 1, 'BOY': 2, 'DUO': 3 };
 
 function renderGallery(){
   const gallery = document.getElementById('gallery');
-  let visible = entries.filter(matchesFilters);
+  const byNumberDesc = (a, b) => (b.number || '').localeCompare(a.number || '', undefined, { numeric:true });
+  let visible = entries.filter(matchesFilters).slice().sort(byNumberDesc);
   if(currentType === 'prompt' && currentCategoryFilter === 'all'){
-    visible = visible.slice().sort((a, b)=>{
+    visible = visible.sort((a, b)=>{
       const catDiff = (CATEGORY_ORDER[a.category || ''] ?? 9) - (CATEGORY_ORDER[b.category || ''] ?? 9);
       if(catDiff !== 0) return catDiff;
-      return (a.number || '').localeCompare(b.number || '', undefined, { numeric:true });
+      return byNumberDesc(a, b);
     });
   }
   if(entries.length === 0){
