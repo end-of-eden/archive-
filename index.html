@@ -276,6 +276,23 @@
     width:100%; height:100%; object-fit:cover; display:block;
     cursor:zoom-in;
   }
+  .card-image-wrap img:not([src]){ display:none; }
+  .card-image-load{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    border:0;
+    background:var(--surface-2);
+    color:var(--text-muted);
+    cursor:pointer;
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:0.04em;
+  }
+  .card-image-load:hover{
+    background:var(--surface-3);
+    color:var(--accent);
+  }
+  .card-image-wrap.image-loaded .card-image-load{ display:none; }
   .card-image-wrap.img-error img{ display:none; }
   .img-error-fallback{
     display:none;
@@ -853,6 +870,7 @@ let currentType = 'style';
 let currentCategoryFilter = 'all';
 let currentStyleVersion = 'NAI 4.5';
 let selectedStyleVersion = 'NAI 4.5';
+const loadedImageIds = new Set();
 const FAVORITES_KEY = 'synapse-favorites';
 let favoriteIds = loadFavoriteIds();
 
@@ -1019,6 +1037,16 @@ function renderGallery(){
       openLightbox(img.src);
     });
   });
+  gallery.querySelectorAll('.card-image-load').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      const wrap = btn.closest('.card-image-wrap');
+      const img = wrap.querySelector('img');
+      loadedImageIds.add(btn.dataset.id);
+      img.src = btn.dataset.src;
+      wrap.classList.add('image-loaded');
+    });
+  });
 }
 
 function fieldWithCopy(label, str, extraClass){
@@ -1047,10 +1075,12 @@ function cardHtml(e){
   const isNai5Number23 = e.type === 'style'
     && (e.tags || []).includes('NAI 5')
     && Number.parseInt(String(e.number || '').trim(), 10) === 23;
+  const isImageLoaded = loadedImageIds.has(String(e.id));
   return `
   <article class="card${isNai5Number23 ? ' nai5-23' : ''}">
-    <div class="card-image-wrap">
-      <img src="${escapeAttr(e.image)}" alt="saved artwork" loading="lazy" style="object-position:${cx}% ${cy}%" onerror="this.parentElement.classList.add('img-error')">
+    <div class="card-image-wrap${isImageLoaded ? ' image-loaded' : ''}">
+      <img${isImageLoaded ? ` src="${escapeAttr(e.image)}"` : ''} alt="saved artwork" loading="lazy" style="object-position:${cx}% ${cy}%" onerror="this.parentElement.classList.add('img-error')">
+      <button type="button" class="card-image-load" data-id="${escapeAttr(e.id)}" data-src="${escapeAttr(e.image)}" aria-label="Load image ${escapeAttr(e.number || '')}">Load image</button>
       <div class="img-error-fallback">Image not available yet</div>
       ${(e.type === 'prompt' || e.type === 'secret') ? `<span class="type-badge">${escapeHtml(e.category || 'ALL')}</span>` : ''}
       <div class="card-actions">
