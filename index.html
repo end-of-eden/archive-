@@ -251,16 +251,36 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:12px;
-    padding-top:8px;
+    gap:10px;
+    padding-top:10px;
   }
-  .gallery-pagination .btn{ min-width:88px; }
+  .gallery-page-button{
+    width:34px;
+    height:34px;
+    display:grid;
+    place-items:center;
+    border:0;
+    border-radius:50%;
+    background:transparent;
+    color:var(--text-muted);
+    font-size:22px;
+    line-height:1;
+    cursor:pointer;
+    transition:background .16s ease, color .16s ease, transform .16s ease;
+  }
+  .gallery-page-button:hover:not(:disabled){
+    background:var(--surface-2);
+    color:var(--text);
+    transform:translateY(-1px);
+  }
+  .gallery-page-button:disabled{ opacity:.22; cursor:default; }
   .gallery-page-label{
-    min-width:72px;
+    min-width:52px;
     text-align:center;
     color:var(--text-muted);
     font-family:var(--font-mono);
-    font-size:12px;
+    font-size:11px;
+    letter-spacing:.04em;
   }
   @media (max-width:560px){ .controls, main, header.hero{ padding-left:18px; padding-right:18px; } }
 
@@ -998,13 +1018,12 @@ const CATEGORY_ORDER = { '': 0, 'ALL': 0, 'GIRL': 1, 'BOY': 2, 'DUO': 3 };
 
 function renderGallery(){
   const gallery = document.getElementById('gallery');
-  const byNumberDesc = (a, b) => (b.number || '').localeCompare(a.number || '', undefined, { numeric:true });
-  let visible = entries.filter(matchesFilters).slice().sort(byNumberDesc);
+  let visible = entries.filter(matchesFilters);
   if(currentType === 'prompt' && currentCategoryFilter === 'all'){
-    visible = visible.sort((a, b)=>{
+    visible = visible.slice().sort((a, b)=>{
       const catDiff = (CATEGORY_ORDER[a.category || ''] ?? 9) - (CATEGORY_ORDER[b.category || ''] ?? 9);
       if(catDiff !== 0) return catDiff;
-      return byNumberDesc(a, b);
+      return (a.number || '').localeCompare(b.number || '', undefined, { numeric:true });
     });
   }
   if(entries.length === 0){
@@ -1027,9 +1046,9 @@ function renderGallery(){
   const pageEntries = visible.slice(pageStart, pageStart + PAGE_SIZE);
   gallery.innerHTML = pageEntries.map(cardHtml).join('') + (pageCount > 1 ? `
     <nav class="gallery-pagination" aria-label="Gallery pages">
-      <button type="button" class="btn gallery-page-prev"${currentPage === 1 ? ' disabled' : ''}>Previous</button>
+      <button type="button" class="gallery-page-button gallery-page-prev" aria-label="Previous page"${currentPage === 1 ? ' disabled' : ''}>‹</button>
       <span class="gallery-page-label">${currentPage} / ${pageCount}</span>
-      <button type="button" class="btn gallery-page-next"${currentPage === pageCount ? ' disabled' : ''}>Next</button>
+      <button type="button" class="gallery-page-button gallery-page-next" aria-label="Next page"${currentPage === pageCount ? ' disabled' : ''}>›</button>
     </nav>` : '');
 
   gallery.querySelectorAll('.card-delete').forEach(btn=>{
