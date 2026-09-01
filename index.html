@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Synapse Archive</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg transform='translate(0,1.5)'%3E%3Cpath d='M23.6 0c-3.4 0-6.3 2-7.6 4.9C14.7 2 11.8 0 8.4 0 3.8 0 0 3.8 0 8.4c0 9.3 15.3 17.6 15.9 17.9.2.1.4.2.6.2s.4-.1.6-.2c.6-.3 15.9-8.6 15.9-17.9C33 3.8 29.2 0 24.6 0z' fill='%23A6332B'/%3E%3C/g%3E%3C/svg%3E">
+<title>Hongcha Archive</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg transform='translate(0,1.5)'%3E%3Cpath d='M23.6 0c-3.4 0-6.3 2-7.6 4.9C14.7 2 11.8 0 8.4 0 3.8 0 0 3.8 0 8.4c0 9.3 15.3 17.6 15.9 17.9.2.1.4.2.6.2s.4-.1.6-.2c.6-.3 15.9-8.6 15.9-17.9C33 3.8 29.2 0 24.6 0z' fill='%23F19BBB'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -15,10 +15,10 @@
     --surface-2:#F1F1F1;
     --border:#E2E2E2;
     --border-soft:#EBEBEB;
-    --accent:#A6332B;
-    --accent-soft:#A6332B1F;
-    --accent-2:#A6332B;
-    --gold:#C9A227;
+    --accent:#69B9E8;
+    --accent-soft:#69B9E824;
+    --accent-2:#F19BBB;
+    --gold:#F19BBB;
     --text:#303030;
     --text-muted:#6B6B6B;
     --text-faint:#9A9A9A;
@@ -26,8 +26,8 @@
     --font-body:'Open Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
     --font-mono:'JetBrains Mono', monospace;
   }
-  ::selection{ background:#A6332B; color:#FFFFFF; }
-  ::-moz-selection{ background:#A6332B; color:#FFFFFF; }
+  ::selection{ background:#69B9E8; color:#FFFFFF; }
+  ::-moz-selection{ background:#69B9E8; color:#FFFFFF; }
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
   body{
@@ -49,7 +49,7 @@
   }
   html::-webkit-scrollbar-thumb{
     border-radius:3px;
-    background-color:#A6332B;
+    background-color:#69B9E8;
   }
   html::-webkit-scrollbar-button{
     width:0;
@@ -78,6 +78,10 @@
     line-height:1.05;
     margin:0 0 12px;
     letter-spacing:-0.01em;
+    color:transparent;
+    background:linear-gradient(100deg, var(--accent), var(--accent-2));
+    background-clip:text;
+    -webkit-background-clip:text;
   }
   .subtitle{
     color:var(--text-muted);
@@ -420,7 +424,7 @@
   }
   .copy-block::-webkit-scrollbar-thumb{
     border-radius:3px;
-    background-color:#A6332B;
+    background-color:#69B9E8;
   }
   .copy-block::-webkit-scrollbar-button{
     width:0;
@@ -729,8 +733,8 @@
 
 <header class="hero">
   <div class="hero-inner">
-    <p class="eyebrow">private archive · nai generations</p>
-    <h1 class="title">Synapse Archive</h1>
+    <p class="eyebrow">image · prompt · style archive</p>
+    <h1 class="title">Hongcha Archive</h1>
   </div>
 </header>
 
@@ -1572,8 +1576,8 @@ document.addEventListener('click', (ev)=>{
 });
 
 /* ---------------- password gates (archive access + secret tab) ---------------- */
-const ACCESS_HASH = 'd4ebe249aeb656f93143920b1ca7897c26fe04a064674d7c1849b435acb41ca2';
-const ACCESS_SESSION_KEY = 'synapse-access-unlocked';
+const ACCESS_HASH = '058f447689c448ae7b775c2f2f4f35c4dcf93e7c11dfc2cd7bc4ca8ede8b72a6';
+const ACCESS_SESSION_KEY = 'hongcha-access-unlocked-v1';
 const SECRET_SESSION_KEY = 'synapse-secret-unlocked';
 
 async function sha256Hex(str){
@@ -1698,7 +1702,7 @@ document.addEventListener('keydown', (ev)=>{
 
 /* ---------------- cursor heart trail ---------------- */
 if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-  const HEART_COLORS = ['#A6332B', '#C9A227'];
+  const HEART_COLORS = ['#69B9E8', '#F19BBB'];
   const SPAWN_INTERVAL_MS = 90; // lower = more frequent hearts
   const HEART_SVG = '<svg viewBox="0 0 32 29" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M23.6 0c-3.4 0-6.3 2-7.6 4.9C14.7 2 11.8 0 8.4 0 3.8 0 0 3.8 0 8.4c0 9.3 15.3 17.6 15.9 17.9.2.1.4.2.6.2s.4-.1.6-.2c.6-.3 15.9-8.6 15.9-17.9C33 3.8 29.2 0 24.6 0z" fill="currentColor"/></svg>';
   let lastHeartSpawn = 0;
