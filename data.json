@@ -121,8 +121,8 @@
   },
   {
     "id": "r2-test-054",
-    "image": "https://archive.assured.love/originals/test-original.webp",
-    "thumbnail": "https://archive.assured.love/thumbs/test-thumb.webp",
+    "image": "https://images.assured.love/originals/test-original.webp",
+    "thumbnail": "https://images.assured.love/thumbs/test-thumb.webp",
     "cropX": 50,
     "cropY": 50,
     "type": "style",
