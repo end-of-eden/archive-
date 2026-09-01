@@ -1052,7 +1052,7 @@ function renderGallery(){
   gallery.querySelectorAll('.card-image-wrap img').forEach(img=>{
     img.addEventListener('click', (ev)=>{
       ev.stopPropagation();
-      openLightbox(img.src);
+      openLightbox(img.dataset.original || img.src);
     });
   });
   gallery.querySelector('.gallery-page-prev')?.addEventListener('click', ()=>{
@@ -1096,7 +1096,7 @@ function cardHtml(e){
   return `
   <article class="card${isNai5Number23 ? ' nai5-23' : ''}">
     <div class="card-image-wrap">
-      <img src="${escapeAttr(e.image)}" alt="saved artwork" loading="lazy" style="object-position:${cx}% ${cy}%" onerror="this.parentElement.classList.add('img-error')">
+      <img src="${escapeAttr(e.thumbnail || e.image)}" data-original="${escapeAttr(e.image)}" alt="saved artwork" loading="lazy" style="object-position:${cx}% ${cy}%" onerror="this.parentElement.classList.add('img-error')">
       <div class="img-error-fallback">Image not available yet</div>
       ${(e.type === 'prompt' || e.type === 'secret') ? `<span class="type-badge">${escapeHtml(e.category || 'ALL')}</span>` : ''}
       <div class="card-actions">
