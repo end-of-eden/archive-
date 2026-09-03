@@ -1111,9 +1111,11 @@ function renderGallery(){
   const pageEntries = visible.slice(pageStart, pageStart + PAGE_SIZE);
   gallery.innerHTML = pageEntries.map(cardHtml).join('') + (pageCount > 1 ? `
     <nav class="gallery-pagination" aria-label="Gallery pages">
+      <button type="button" class="gallery-page-button gallery-page-first" aria-label="First page"${currentPage === 1 ? ' disabled' : ''}>«</button>
       <button type="button" class="gallery-page-button gallery-page-prev" aria-label="Previous page"${currentPage === 1 ? ' disabled' : ''}>‹</button>
       <span class="gallery-page-label">${currentPage} / ${pageCount}</span>
       <button type="button" class="gallery-page-button gallery-page-next" aria-label="Next page"${currentPage === pageCount ? ' disabled' : ''}>›</button>
+      <button type="button" class="gallery-page-button gallery-page-last" aria-label="Last page"${currentPage === pageCount ? ' disabled' : ''}>»</button>
     </nav>` : '');
 
   gallery.querySelectorAll('.card-delete').forEach(btn=>{
@@ -1140,15 +1142,22 @@ function renderGallery(){
       openLightbox(img.dataset.original || img.src);
     });
   });
-  gallery.querySelector('.gallery-page-prev')?.addEventListener('click', ()=>{
-    currentPage -= 1;
+  const goToPage = (page)=>{
+    currentPage = page;
     renderGallery();
     window.scrollTo({ top:0, behavior:'smooth' });
+  };
+  gallery.querySelector('.gallery-page-first')?.addEventListener('click', ()=>{
+    goToPage(1);
+  });
+  gallery.querySelector('.gallery-page-prev')?.addEventListener('click', ()=>{
+    goToPage(currentPage - 1);
   });
   gallery.querySelector('.gallery-page-next')?.addEventListener('click', ()=>{
-    currentPage += 1;
-    renderGallery();
-    window.scrollTo({ top:0, behavior:'smooth' });
+    goToPage(currentPage + 1);
+  });
+  gallery.querySelector('.gallery-page-last')?.addEventListener('click', ()=>{
+    goToPage(pageCount);
   });
 }
 

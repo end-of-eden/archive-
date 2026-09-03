@@ -1,11 +1,11 @@
-# Synapse Archive
+# Hongcha Archive
 
 NAI 작품 저장용 개인 갤러리. GitHub Pages로 배포하고, GitHub API로 직접 이미지·프롬프트를 커밋하는 정적 사이트입니다. 로그인 없음, 서버 없음, 오직 자하님 혼자 씁니다.
 
 ## 배포 순서
 
 1. **저장소 만들기**
-   - GitHub에서 새 저장소 생성 (예: `synapse-archive`), Public으로 설정
+   - GitHub에서 새 저장소 생성 (예: `hongcha-archive`), Public으로 설정
    - 이 폴더 안의 `index.html`, `data.json`을 저장소 루트에 커밋 & 푸시
    - `images/` 폴더는 첫 업로드 시 자동으로 생성되니 미리 안 만들어도 됩니다
 
