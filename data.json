@@ -118,21 +118,5 @@
     "characters": [],
     "tags": [],
     "date": "2026-07-09"
-  },
-  {
-    "id": "r2-test-054",
-    "image": "https://images.assured.love/originals/test-original.webp",
-    "thumbnail": "https://images.assured.love/thumbs/test-thumb.webp",
-    "cropX": 50,
-    "cropY": 50,
-    "type": "style",
-    "number": "054",
-    "params": "R2 + D1 migration test",
-    "artists": "Cloudflare R2 connection test",
-    "prompt": "",
-    "negative": "",
-    "characters": [],
-    "tags": ["NAI 4.5"],
-    "date": "2026-09-01"
   }
 ]
