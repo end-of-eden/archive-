@@ -106,7 +106,8 @@
   },
   {
     "id": "1783582661458-l1sc28",
-    "image": "images/1783582661458-l1sc28-1783582661458.png",
+    "image": "https://images.assured.love/placeholders/supabase-migration.webp",
+    "thumbnail": "https://images.assured.love/placeholders/supabase-migration.webp",
     "cropX": 50,
     "cropY": 50,
     "type": "style",
