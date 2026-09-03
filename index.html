@@ -1590,9 +1590,9 @@ document.addEventListener('click', (ev)=>{
 /* ---------------- password gate ---------------- */
 const ACCESS_HASH = '4494a7fccb1246112d0a61f53dff99b68dddf75ddc5bf9e387ded10babadeb30';
 const ACCESS_FALLBACK_HASH = 'f644d2c9';
-const ACCESS_SESSION_KEY = 'hongcha-access-unlocked-v2';
-const API_KEY_SESSION_KEY = 'hongcha-api-key-v1';
-let archiveApiKey = sessionStorage.getItem(API_KEY_SESSION_KEY) || '';
+const ACCESS_STORAGE_KEY = 'hongcha-access-unlocked-v2';
+const API_KEY_STORAGE_KEY = 'hongcha-api-key-v1';
+let archiveApiKey = localStorage.getItem(API_KEY_STORAGE_KEY) || '';
 
 async function sha256Hex(str){
   const enc = new TextEncoder().encode(str);
@@ -1624,8 +1624,8 @@ async function submitAccessPassword(){
       accessPassword.select();
       return;
     }
-    sessionStorage.setItem(ACCESS_SESSION_KEY, '1');
-    sessionStorage.setItem(API_KEY_SESSION_KEY, normalizedPassword);
+    localStorage.setItem(ACCESS_STORAGE_KEY, '1');
+    localStorage.setItem(API_KEY_STORAGE_KEY, normalizedPassword);
     archiveApiKey = normalizedPassword;
     accessOverlay.classList.remove('open');
     await loadEntries();
@@ -1640,11 +1640,12 @@ accessPassword.addEventListener('keydown', (ev)=>{
   if(ev.key === 'Enter') submitAccessPassword();
 });
 
-if(sessionStorage.getItem(ACCESS_SESSION_KEY) === '1' && archiveApiKey){
+if(localStorage.getItem(ACCESS_STORAGE_KEY) === '1' && archiveApiKey){
   accessOverlay.classList.remove('open');
   loadEntries();
 }else{
-  sessionStorage.removeItem(ACCESS_SESSION_KEY);
+  localStorage.removeItem(ACCESS_STORAGE_KEY);
+  localStorage.removeItem(API_KEY_STORAGE_KEY);
   requestAnimationFrame(()=> accessPassword.focus());
 }
 
