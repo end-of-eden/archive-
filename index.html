@@ -923,6 +923,7 @@
 
 <script>
 const ARCHIVE_API_URL = 'https://hongcha-archive-api.busyhyundai.workers.dev';
+const PLACEHOLDER_IMAGE_URL = 'https://images.assured.love/placeholders/supabase-migration.webp';
 
 let entries = [];
 let currentType = 'style';
@@ -990,10 +991,11 @@ function confirmDialog(title, message, okText){
 
 /* ---------------- data load & render ---------------- */
 function rowToEntry(row){
+  const image = row.image || PLACEHOLDER_IMAGE_URL;
   return {
     id: row.id,
-    image: row.image,
-    thumbnail: row.thumbnail || row.image,
+    image,
+    thumbnail: row.thumbnail || image,
     cropX: row.cropX != null ? row.cropX : (row.crop_x != null ? row.crop_x : 50),
     cropY: row.cropY != null ? row.cropY : (row.crop_y != null ? row.crop_y : 50),
     type: row.type,
@@ -1172,6 +1174,8 @@ function cardHtml(e){
     .join('');
   const cx = e.cropX != null ? e.cropX : 50;
   const cy = e.cropY != null ? e.cropY : 50;
+  const image = e.image || PLACEHOLDER_IMAGE_URL;
+  const thumbnail = e.thumbnail || image;
   const isFavorite = favoriteIds.has(String(e.id));
   const isNai5Number23 = e.type === 'style'
     && (e.tags || []).includes('NAI 5')
@@ -1179,7 +1183,7 @@ function cardHtml(e){
   return `
   <article class="card${isNai5Number23 ? ' nai5-23' : ''}">
     <div class="card-image-wrap">
-      <img src="${escapeAttr(e.thumbnail || e.image)}" data-original="${escapeAttr(e.image)}" alt="saved artwork" loading="lazy" style="object-position:${cx}% ${cy}%" onerror="this.parentElement.classList.add('img-error')">
+      <img src="${escapeAttr(thumbnail)}" data-original="${escapeAttr(image)}" data-fallback="${escapeAttr(PLACEHOLDER_IMAGE_URL)}" alt="saved artwork" loading="lazy" style="object-position:${cx}% ${cy}%" onerror="if(this.src !== this.dataset.fallback){ this.src=this.dataset.fallback; this.dataset.original=this.dataset.fallback; }else{ this.parentElement.classList.add('img-error'); }">
       <div class="img-error-fallback">Image not available yet</div>
       ${(e.type === 'prompt' || e.type === 'secret') ? `<span class="type-badge">${escapeHtml(e.category || 'ALL')}</span>` : ''}
       <div class="card-actions">
