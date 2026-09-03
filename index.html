@@ -134,6 +134,37 @@
     border-bottom:1px solid var(--border-soft);
     padding-bottom:2px;
   }
+  .gallery-search{
+    position:relative;
+    width:min(38vw, 360px);
+    margin-left:auto;
+  }
+  .gallery-search input{
+    width:100%;
+    padding:11px 42px 11px 14px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:var(--surface);
+    color:var(--text);
+    font-family:var(--font-body);
+    font-size:14px;
+  }
+  .gallery-search input::placeholder{ color:var(--text-faint); }
+  .gallery-search-clear{
+    position:absolute;
+    top:50%; right:8px;
+    width:30px; height:30px;
+    transform:translateY(-50%);
+    border:0;
+    border-radius:8px;
+    background:transparent;
+    color:var(--text-muted);
+    cursor:pointer;
+    font-size:18px;
+    line-height:1;
+  }
+  .gallery-search-clear:hover{ background:var(--surface-2); color:var(--text); }
+  .gallery-search-clear[hidden]{ display:none; }
   .type-tab{
     background:none;
     border:none;
@@ -151,20 +182,6 @@
     border-bottom-color:var(--accent);
     font-weight:500;
   }
-  .secret-btn.secret-active{
-    color:var(--accent);
-  }
-  .secret-btn{
-    background:none;
-    border:none;
-    color:var(--text-faint);
-    font-size:14px;
-    padding:8px 4px;
-    margin-left:auto;
-    cursor:pointer;
-    transition:color 0.15s, transform 0.15s;
-  }
-  .secret-btn:hover{ color:var(--accent); transform:scale(1.08); }
 
   .preset-pills{
     display:flex;
@@ -296,7 +313,11 @@
     font-size:11px;
     letter-spacing:.04em;
   }
-  @media (max-width:560px){ .controls, main, header.hero{ padding-left:18px; padding-right:18px; } }
+  @media (max-width:560px){
+    .controls, main, header.hero{ padding-left:18px; padding-right:18px; }
+    .type-tabs{ flex-wrap:wrap; }
+    .gallery-search{ order:2; width:100%; margin:6px 0 0; }
+  }
 
   .card{
     background:var(--surface);
@@ -764,7 +785,10 @@
     <button class="type-tab" data-type="outfit">Outfit</button>
     <button class="type-tab" data-type="character">Character</button>
     <button class="type-tab" data-type="favorites">Favorites</button>
-    <button class="secret-btn" id="secret-btn" title="???" aria-label="Secret">(^╷ ̫ ╷^)ﾉ❤︎</button>
+    <div class="gallery-search">
+      <input type="search" id="gallery-search" placeholder="Search number, tags, prompt, settings..." aria-label="Search archive">
+      <button type="button" class="gallery-search-clear" id="gallery-search-clear" aria-label="Clear search" hidden>×</button>
+    </div>
   </div>
 </div>
 
@@ -859,21 +883,6 @@
   </div>
 </div>
 
-<!-- Secret unlock modal -->
-<div class="overlay" id="secret-overlay">
-  <div class="modal">
-    <h2>Password</h2>
-    <p class="modal-sub">Enter the password to continue.</p>
-    <div class="field">
-      <input type="password" id="secret-password" placeholder="••••••••">
-    </div>
-    <div class="modal-actions">
-      <button class="btn" id="secret-cancel">Cancel</button>
-      <button class="btn btn-primary" id="secret-submit">Unlock</button>
-    </div>
-  </div>
-</div>
-
 <!-- Lightbox -->
 <div class="overlay lightbox-overlay" id="lightbox-overlay">
   <button class="lightbox-close" id="lightbox-close" aria-label="Close">×</button>
@@ -902,7 +911,8 @@ let currentType = 'style';
 let currentCategoryFilter = 'all';
 let currentStyleVersion = 'NAI 4.5';
 let selectedStyleVersion = 'NAI 4.5';
-const PAGE_SIZE = 8;
+let searchQuery = '';
+const PAGE_SIZE = 12;
 let currentPage = 1;
 const FAVORITES_KEY = 'synapse-favorites';
 let favoriteIds = loadFavoriteIds();
@@ -1002,18 +1012,52 @@ async function loadEntries(){
 }
 
 function matchesFilters(entry){
-  if(currentType === 'favorites') return favoriteIds.has(String(entry.id));
-  if(entry.type !== currentType) return false;
+  if(currentType === 'favorites'){
+    if(!favoriteIds.has(String(entry.id))) return false;
+  }else if(entry.type !== currentType){
+    return false;
+  }
   if(currentType === 'style'){
     const version = (entry.tags || []).find(tag => tag === 'NAI 4.5' || tag === 'NAI 5') || 'NAI 4.5';
-    return version === currentStyleVersion;
+    if(version !== currentStyleVersion) return false;
   }
   if(currentType === 'prompt' && currentCategoryFilter !== 'all'){
     const cat = entry.category || '';
-    return cat === '' || cat === 'ALL' || cat === currentCategoryFilter;
+    if(cat !== '' && cat !== 'ALL' && cat !== currentCategoryFilter) return false;
   }
-  return true;
+  if(!searchQuery) return true;
+  const searchable = [
+    entry.number,
+    entry.type,
+    entry.params,
+    entry.artists,
+    entry.category,
+    entry.prompt,
+    entry.negative,
+    ...(entry.tags || []),
+    ...(entry.characters || []).flatMap(character => [character.name, character.outfit])
+  ].filter(Boolean).join(' ').toLocaleLowerCase();
+  return searchable.includes(searchQuery);
 }
+
+const gallerySearch = document.getElementById('gallery-search');
+const gallerySearchClear = document.getElementById('gallery-search-clear');
+
+gallerySearch.addEventListener('input', ()=>{
+  searchQuery = gallerySearch.value.trim().toLocaleLowerCase();
+  gallerySearchClear.hidden = !searchQuery;
+  currentPage = 1;
+  renderGallery();
+});
+
+gallerySearchClear.addEventListener('click', ()=>{
+  gallerySearch.value = '';
+  searchQuery = '';
+  gallerySearchClear.hidden = true;
+  currentPage = 1;
+  renderGallery();
+  gallerySearch.focus();
+});
 
 const CATEGORY_ORDER = { '': 0, 'ALL': 0, 'GIRL': 1, 'BOY': 2, 'DUO': 3 };
 
@@ -1037,7 +1081,7 @@ function renderGallery(){
   if(visible.length === 0){
     gallery.innerHTML = `<div class="empty-state">
       <h2>Nothing matches</h2>
-      <p>Try adjusting your tag filters.</p>
+      <p>Try another search or adjust the filters.</p>
     </div>`;
     return;
   }
@@ -1495,7 +1539,6 @@ document.querySelectorAll('.type-tab').forEach(btn=>{
     currentType = btn.dataset.type;
     resetCategoryFilter();
     document.querySelectorAll('.type-tab').forEach(b=> b.classList.toggle('active', b === btn));
-    document.getElementById('secret-btn').classList.remove('secret-active');
     updateStyleVersionTabs();
 
     if(isPromptTab){
@@ -1526,12 +1569,11 @@ document.addEventListener('click', (ev)=>{
   if(!ev.target.closest('.type-tab-dropdown-wrap')) closePromptDropdown();
 });
 
-/* ---------------- password gates (archive access + secret tab) ---------------- */
+/* ---------------- password gate ---------------- */
 const ACCESS_HASH = '4494a7fccb1246112d0a61f53dff99b68dddf75ddc5bf9e387ded10babadeb30';
 const ACCESS_FALLBACK_HASH = 'f644d2c9';
 const ACCESS_SESSION_KEY = 'hongcha-access-unlocked-v2';
 const API_KEY_SESSION_KEY = 'hongcha-api-key-v1';
-const SECRET_SESSION_KEY = 'synapse-secret-unlocked';
 let archiveApiKey = sessionStorage.getItem(API_KEY_SESSION_KEY) || '';
 
 async function sha256Hex(str){
@@ -1547,10 +1589,6 @@ function fnv1aHex(str){
     hash = Math.imul(hash, 0x01000193);
   }
   return (hash >>> 0).toString(16).padStart(8, '0');
-}
-
-function isUnlocked(){
-  return sessionStorage.getItem(SECRET_SESSION_KEY) === '1';
 }
 
 const accessOverlay = document.getElementById('access-overlay');
@@ -1591,53 +1629,6 @@ if(sessionStorage.getItem(ACCESS_SESSION_KEY) === '1' && archiveApiKey){
   sessionStorage.removeItem(ACCESS_SESSION_KEY);
   requestAnimationFrame(()=> accessPassword.focus());
 }
-
-const secretOverlay = document.getElementById('secret-overlay');
-const secretBtn = document.getElementById('secret-btn');
-let pendingUnlockAction = null;
-
-function requireUnlock(action){
-  if(isUnlocked()){
-    action();
-    return;
-  }
-  pendingUnlockAction = action;
-  document.getElementById('secret-password').value = '';
-  secretOverlay.classList.add('open');
-  document.getElementById('secret-password').focus();
-}
-
-function enterSecretMode(){
-  currentType = 'secret';
-  resetCategoryFilter();
-  document.querySelectorAll('.type-tab').forEach(b=> b.classList.remove('active'));
-  secretBtn.classList.add('secret-active');
-  updateStyleVersionTabs();
-  closePromptDropdown();
-  renderGallery();
-}
-
-secretBtn.addEventListener('click', ()=> requireUnlock(enterSecretMode));
-document.getElementById('secret-cancel').addEventListener('click', ()=>{
-  secretOverlay.classList.remove('open');
-  pendingUnlockAction = null;
-});
-document.getElementById('secret-submit').addEventListener('click', async ()=>{
-  const val = document.getElementById('secret-password').value;
-  const hash = await sha256Hex(val);
-  if(hash === ACCESS_HASH){
-    sessionStorage.setItem(SECRET_SESSION_KEY, '1');
-    secretOverlay.classList.remove('open');
-    const action = pendingUnlockAction;
-    pendingUnlockAction = null;
-    if(action) action();
-  }else{
-    showToast('Wrong password.', true);
-  }
-});
-document.getElementById('secret-password').addEventListener('keydown', (ev)=>{
-  if(ev.key === 'Enter') document.getElementById('secret-submit').click();
-});
 
 document.getElementById('gallery').addEventListener('click', (ev)=>{
   const fieldWrap = ev.target.closest('.copy-field');
